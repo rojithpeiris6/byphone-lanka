@@ -16,6 +16,7 @@ export function AnnounceBar() {
 
 export function Header() {
   const count = useCart((s) => s.count());
+  const openCart = useCart((s) => s.open);
   const nav = [
     { to: "/", label: "Home" },
     { to: "/shop", label: "Shop" },
@@ -39,12 +40,12 @@ export function Header() {
         <div className="flex items-center gap-1 sm:gap-2 text-foreground">
           <button aria-label="Search" className="p-2 rounded-full hover:bg-secondary transition-colors"><Search className="size-5" /></button>
           <button aria-label="Account" className="p-2 rounded-full hover:bg-secondary transition-colors hidden sm:inline-flex"><User className="size-5" /></button>
-          <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full hover:bg-secondary transition-colors">
+          <button onClick={openCart} aria-label="Cart" className="relative p-2 rounded-full hover:bg-secondary transition-colors">
             <ShoppingCart className="size-5" />
             <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 min-w-4 flex items-center justify-center px-1">
               {count}
             </span>
-          </Link>
+          </button>
         </div>
       </div>
     </header>

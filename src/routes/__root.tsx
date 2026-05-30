@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header, BottomNav, Footer } from "@/components/layout";
+import { CartDrawer } from "@/components/CartDrawer";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -96,6 +97,7 @@ function RootComponent() {
         </main>
         <Footer />
         <BottomNav />
+        <CartDrawer />
         <Toaster position="top-center" richColors />
       </div>
     </QueryClientProvider>

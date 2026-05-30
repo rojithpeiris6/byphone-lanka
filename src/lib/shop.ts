@@ -144,6 +144,10 @@ export type CartItem = { id: string; qty: number };
 
 type CartState = {
   items: CartItem[];
+  isOpen: boolean;
+  open: () => void;
+  close: () => void;
+  setOpen: (v: boolean) => void;
   add: (id: string, qty?: number) => void;
   remove: (id: string) => void;
   setQty: (id: string, qty: number) => void;
@@ -154,11 +158,17 @@ type CartState = {
 
 export const useCart = create<CartState>((set, get) => ({
   items: [],
+  isOpen: false,
+  open: () => set({ isOpen: true }),
+  close: () => set({ isOpen: false }),
+  setOpen: (v) => set({ isOpen: v }),
   add: (id, qty = 1) =>
     set((s) => {
       const existing = s.items.find((i) => i.id === id);
-      if (existing) return { items: s.items.map((i) => (i.id === id ? { ...i, qty: i.qty + qty } : i)) };
-      return { items: [...s.items, { id, qty }] };
+      const items = existing
+        ? s.items.map((i) => (i.id === id ? { ...i, qty: i.qty + qty } : i))
+        : [...s.items, { id, qty }];
+      return { items, isOpen: true };
     }),
   remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
   setQty: (id, qty) =>
