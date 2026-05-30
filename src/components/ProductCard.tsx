@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import type { Product } from "@/lib/shop";
 import { formatLKR, useCart } from "@/lib/shop";
-import { toast } from "sonner";
 
 export function ProductCard({ p }: { p: Product }) {
   const add = useCart((s) => s.add);
@@ -32,7 +31,7 @@ export function ProductCard({ p }: { p: Product }) {
           {p.oldPrice && <span className="text-xs text-muted-foreground line-through">{formatLKR(p.oldPrice)}</span>}
         </div>
         <button
-          onClick={() => { add(p.id); toast.success("Added to cart", { description: p.name }); }}
+          onClick={() => { add(p.id); }}
           className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 text-primary text-sm font-semibold py-2 hover:bg-primary hover:text-primary-foreground transition-colors"
         >
           <ShoppingCart className="size-4" /> ADD TO CART
