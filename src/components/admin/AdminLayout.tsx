@@ -1,4 +1,4 @@
-import { Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, Outlet, useRouterState, useNavigate, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { LayoutDashboard, Package, FolderTree, Tags, Boxes, ShoppingBag, Users, Ticket, Star, Zap, CreditCard, Truck, ChartBar as BarChart3, Megaphone, Bell, UserCog, Settings, ScrollText, Search, Menu, X, ChevronDown, LogOut, Loader as Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,8 @@ export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
+  const isLoginPage = path === "/admin/login";
+
   // Redirect to login if not authenticated
   if (loading) {
     return (
@@ -49,12 +51,15 @@ export function AdminLayout() {
     );
   }
 
-  if (!user) {
-    navigate({ to: "/admin/login" });
-    return null;
+  if (!user && !isLoginPage) {
+    return <Navigate to="/admin/login" />;
   }
 
-  const initials = user.email.slice(0, 2).toUpperCase();
+  if (isLoginPage) {
+    return <Outlet />;
+  }
+
+  const initials = user?.email?.slice(0, 2).toUpperCase() || "A";
 
   return (
     <div className="min-h-screen bg-muted/30 text-foreground">
@@ -130,7 +135,7 @@ export function AdminLayout() {
             <div className="size-8 rounded-full bg-gradient-to-br from-primary to-primary/60 grid place-items-center text-primary-foreground text-xs font-bold">{initials}</div>
             <div className="hidden sm:block text-sm leading-tight">
               <div className="font-semibold">Admin</div>
-              <div className="text-xs text-muted-foreground">{user.email}</div>
+              <div className="text-xs text-muted-foreground">{user?.email}</div>
             </div>
             <ChevronDown className="size-4 text-muted-foreground hidden sm:block" />
           </div>
