@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Search, User, ShoppingCart, Truck, ShieldCheck, RotateCcw, Home, LayoutGrid, Tag, UserCircle2 } from "lucide-react";
+import { Search, User, ShoppingCart, Truck, ShieldCheck, RotateCcw, Hop as Home, LayoutGrid, Tag, CircleUser as UserCircle2, LayoutDashboard } from "lucide-react";
 import { useCart } from "@/lib/shop";
 
 export function AnnounceBar() {
@@ -40,6 +40,7 @@ export function Header() {
         <div className="flex items-center gap-1 sm:gap-2 text-foreground">
           <button aria-label="Search" className="p-2 rounded-full hover:bg-secondary transition-colors"><Search className="size-5" /></button>
           <button aria-label="Account" className="p-2 rounded-full hover:bg-secondary transition-colors hidden sm:inline-flex"><User className="size-5" /></button>
+          <Link to="/admin/dashboard" aria-label="Admin" className="p-2 rounded-full hover:bg-secondary transition-colors hidden sm:inline-flex"><LayoutDashboard className="size-5" /></Link>
           <button onClick={openCart} aria-label="Cart" className="relative p-2 rounded-full hover:bg-secondary transition-colors">
             <ShoppingCart className="size-5" />
             <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 min-w-4 flex items-center justify-center px-1">
