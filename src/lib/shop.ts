@@ -1,0 +1,175 @@
+import { create } from "zustand";
+import iphone15pro from "@/assets/phone-iphone15pro.jpg";
+import s24ultra from "@/assets/phone-s24ultra.jpg";
+import oneplus12 from "@/assets/phone-oneplus12.jpg";
+import xiaomi14 from "@/assets/phone-xiaomi14.jpg";
+import nothing2 from "@/assets/phone-nothing2.jpg";
+import earbuds from "@/assets/cat-earbuds.jpg";
+import watch from "@/assets/cat-watch.jpg";
+import tablet from "@/assets/cat-tablet.jpg";
+import cases from "@/assets/cat-cases.jpg";
+import charger from "@/assets/cat-charger.jpg";
+
+export type Product = {
+  id: string;
+  brand: string;
+  name: string;
+  price: number;
+  oldPrice?: number;
+  rating: number;
+  reviews: number;
+  image: string;
+  category: string;
+  badge?: string;
+  storage?: string[];
+  colors?: { name: string; hex: string }[];
+  highlights?: string[];
+  description?: string;
+  specs?: Record<string, string>;
+};
+
+export const products: Product[] = [
+  {
+    id: "iphone-15-pro-256",
+    brand: "Apple", name: "iPhone 15 Pro 256GB",
+    price: 499999, oldPrice: 529999, rating: 4.8, reviews: 128,
+    image: iphone15pro, category: "Smartphones", badge: "NEW",
+    storage: ["128GB", "256GB", "512GB", "1TB"],
+    colors: [
+      { name: "Natural Titanium", hex: "#B5AFA4" },
+      { name: "Blue Titanium", hex: "#3E5673" },
+      { name: "White Titanium", hex: "#F0EDE6" },
+      { name: "Black Titanium", hex: "#3A3A3C" },
+    ],
+    highlights: [
+      "6.1-inch Super Retina XDR display with ProMotion",
+      "A17 Pro chip. A monster win for gaming.",
+      "Pro camera system with 48MP Main camera",
+      "Titanium design. Strong. Light. Pro.",
+      "Up to 23 hours video playback",
+    ],
+    description: "iPhone 15 Pro is built with a lightweight and durable titanium design and features the A17 Pro chip, a customizable Action button, and a powerful Pro camera system.",
+    specs: {
+      Display: "6.1-inch Super Retina XDR",
+      Chip: "A17 Pro",
+      Camera: "48MP Main | 12MP Ultra Wide | 12MP Telephoto",
+      "Front Camera": "12MP TrueDepth",
+      Battery: "Up to 23 hours video playback",
+      Charging: "USB-C, Support for USB 3",
+      "Water Resistance": "IP68 (6m for 30 min)",
+      OS: "iOS 17",
+    },
+  },
+  {
+    id: "galaxy-s24-ultra-256",
+    brand: "Samsung", name: "Galaxy S24 Ultra 5G 256GB",
+    price: 399999, oldPrice: 449999, rating: 4.7, reviews: 96,
+    image: s24ultra, category: "Smartphones", badge: "-11%",
+    storage: ["256GB", "512GB", "1TB"],
+    colors: [{ name: "Titanium Black", hex: "#1c1c1e" }, { name: "Titanium Gray", hex: "#8e8e93" }],
+  },
+  {
+    id: "oneplus-12-256",
+    brand: "OnePlus", name: "OnePlus 12 5G 256GB",
+    price: 279999, rating: 4.6, reviews: 64,
+    image: oneplus12, category: "Smartphones",
+    storage: ["256GB", "512GB"],
+    colors: [{ name: "Flowy Emerald", hex: "#1c5f3f" }, { name: "Silky Black", hex: "#101010" }],
+  },
+  {
+    id: "xiaomi-14-256",
+    brand: "Xiaomi", name: "Xiaomi 14 5G 256GB",
+    price: 239999, rating: 4.5, reviews: 41,
+    image: xiaomi14, category: "Smartphones",
+  },
+  {
+    id: "nothing-2-256",
+    brand: "Nothing", name: "Nothing Phone (2) 12GB / 256GB",
+    price: 189999, rating: 4.6, reviews: 88,
+    image: nothing2, category: "Smartphones",
+  },
+  {
+    id: "airpods-pro-2",
+    brand: "Apple", name: "AirPods Pro (2nd Gen) USB-C",
+    price: 79999, rating: 4.8, reviews: 312,
+    image: earbuds, category: "Earbuds",
+  },
+  {
+    id: "apple-watch-s9",
+    brand: "Apple", name: "Apple Watch Series 9 45mm",
+    price: 139999, rating: 4.7, reviews: 152,
+    image: watch, category: "Smartwatches",
+  },
+  {
+    id: "ipad-pro-m4",
+    brand: "Apple", name: 'iPad Pro M4 11" 256GB',
+    price: 349999, rating: 4.9, reviews: 73,
+    image: tablet, category: "Tablets",
+  },
+  {
+    id: "case-iphone-15",
+    brand: "byphone", name: "Silicone Case for iPhone 15",
+    price: 4990, rating: 4.4, reviews: 220,
+    image: cases, category: "Cases",
+  },
+  {
+    id: "charger-20w",
+    brand: "Apple", name: "20W USB-C Power Adapter",
+    price: 6990, rating: 4.6, reviews: 410,
+    image: charger, category: "Chargers",
+  },
+];
+
+export const categories = [
+  { name: "Smartphones", image: iphone15pro, slug: "Smartphones" },
+  { name: "Earbuds", image: earbuds, slug: "Earbuds" },
+  { name: "Smartwatches", image: watch, slug: "Smartwatches" },
+  { name: "Tablets", image: tablet, slug: "Tablets" },
+  { name: "Cases", image: cases, slug: "Cases" },
+  { name: "Chargers", image: charger, slug: "Chargers" },
+];
+
+export const brands = ["Apple", "Samsung", "Xiaomi", "OnePlus", "Nothing", "Google", "Honor", "Vivo", "Oppo"];
+
+export function getProduct(id: string) {
+  return products.find((p) => p.id === id);
+}
+
+export function formatLKR(n: number) {
+  return "Rs. " + n.toLocaleString("en-LK");
+}
+
+/* ---------- Cart store ---------- */
+export type CartItem = { id: string; qty: number };
+
+type CartState = {
+  items: CartItem[];
+  add: (id: string, qty?: number) => void;
+  remove: (id: string) => void;
+  setQty: (id: string, qty: number) => void;
+  clear: () => void;
+  count: () => number;
+  subtotal: () => number;
+};
+
+export const useCart = create<CartState>((set, get) => ({
+  items: [],
+  add: (id, qty = 1) =>
+    set((s) => {
+      const existing = s.items.find((i) => i.id === id);
+      if (existing) return { items: s.items.map((i) => (i.id === id ? { ...i, qty: i.qty + qty } : i)) };
+      return { items: [...s.items, { id, qty }] };
+    }),
+  remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+  setQty: (id, qty) =>
+    set((s) => ({
+      items: qty <= 0 ? s.items.filter((i) => i.id !== id) : s.items.map((i) => (i.id === id ? { ...i, qty } : i)),
+    })),
+  clear: () => set({ items: [] }),
+  count: () => get().items.reduce((a, b) => a + b.qty, 0),
+  subtotal: () =>
+    get().items.reduce((a, b) => {
+      const p = getProduct(b.id);
+      return a + (p ? p.price * b.qty : 0);
+    }, 0),
+}));
