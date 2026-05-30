@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -23,7 +24,7 @@ function NotFoundComponent() {
         <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">The page you're looking for doesn't exist.</p>
         <div className="mt-6">
-          <Link to="/" className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-dark">
+          <Link to="/" className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
             Go home
           </Link>
         </div>
@@ -42,7 +43,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <h1 className="text-xl font-semibold">This page didn't load</h1>
         <p className="mt-2 text-sm text-muted-foreground">Something went wrong. Try refreshing.</p>
         <div className="mt-6 flex justify-center gap-2">
-          <button onClick={() => { router.invalidate(); reset(); }} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-dark">Try again</button>
+          <button onClick={() => { router.invalidate(); reset(); }} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Try again</button>
           <a href="/" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold hover:bg-accent">Home</a>
         </div>
       </div>
@@ -56,13 +57,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "byphone.lk — Latest Smartphones at the Best Prices in Sri Lanka" },
-      { name: "description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka. 100% genuine with official warranty and free islandwide delivery." },
+      { name: "description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
       { name: "theme-color", content: "#2563EB" },
-      { property: "og:site_name", content: "byphone.lk" },
-      { property: "og:type", content: "website" },
-      { property: "og:title", content: "byphone.lk — Smartphones & Tech, Sri Lanka" },
-      { property: "og:description", content: "100% genuine smartphones with official warranty and free islandwide delivery." },
+      { property: "og:title", content: "byphone.lk — Latest Smartphones at the Best Prices in Sri Lanka" },
+      { name: "twitter:title", content: "byphone.lk — Latest Smartphones at the Best Prices in Sri Lanka" },
+      { property: "og:description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
+      { name: "twitter:description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -88,18 +92,27 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const isAdmin = path.startsWith("/admin");
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 pb-20 lg:pb-0">
+      {isAdmin ? (
+        <>
           <Outlet />
-        </main>
-        <Footer />
-        <BottomNav />
-        <CartDrawer />
-        <Toaster position="top-center" richColors />
-      </div>
+          <Toaster position="top-center" richColors />
+        </>
+      ) : (
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-1 pb-20 lg:pb-0">
+            <Outlet />
+          </main>
+          <Footer />
+          <BottomNav />
+          <CartDrawer />
+          <Toaster position="top-center" richColors />
+        </div>
+      )}
     </QueryClientProvider>
   );
 }
