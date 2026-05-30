@@ -1,11 +1,8 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  LayoutDashboard, Package, FolderTree, Tags, Boxes, ShoppingBag, Users, Ticket,
-  Star, Zap, CreditCard, Truck, BarChart3, Megaphone, Bell, UserCog, Settings,
-  ScrollText, Search, Menu, X, ChevronDown,
-} from "lucide-react";
+import { LayoutDashboard, Package, FolderTree, Tags, Boxes, ShoppingBag, Users, Ticket, Star, Zap, CreditCard, Truck, ChartBar as BarChart3, Megaphone, Bell, UserCog, Settings, ScrollText, Search, Menu, X, ChevronDown, LogOut, Loader as Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdminAuth } from "@/lib/admin-auth";
 
 const NAV: { to: string; label: string; Icon: any }[] = [
   { to: "/admin", label: "Dashboard", Icon: LayoutDashboard },
@@ -37,9 +34,27 @@ const NOTIFICATIONS = [
 ];
 
 export function AdminLayout() {
+  const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { user, loading, signOut } = useAdminAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+
+  // Redirect to login if not authenticated
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <Loader2 className="size-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    navigate({ to: "/admin/login" });
+    return null;
+  }
+
+  const initials = user.email.slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen bg-muted/30 text-foreground">
@@ -112,13 +127,20 @@ export function AdminLayout() {
             <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500" />
           </button>
           <div className="flex items-center gap-2 pl-2 border-l border-border h-9">
-            <div className="size-8 rounded-full bg-gradient-to-br from-primary to-primary/60 grid place-items-center text-primary-foreground text-xs font-bold">AD</div>
+            <div className="size-8 rounded-full bg-gradient-to-br from-primary to-primary/60 grid place-items-center text-primary-foreground text-xs font-bold">{initials}</div>
             <div className="hidden sm:block text-sm leading-tight">
               <div className="font-semibold">Admin</div>
-              <div className="text-xs text-muted-foreground">admin@byphone.lk</div>
+              <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
             <ChevronDown className="size-4 text-muted-foreground hidden sm:block" />
           </div>
+          <button
+            onClick={async () => { await signOut(); navigate({ to: "/admin/login" }); }}
+            className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"
+            title="Sign out"
+          >
+            <LogOut className="size-5" />
+          </button>
         </header>
 
         {/* Page */}

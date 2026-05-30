@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header, BottomNav, Footer } from "@/components/layout";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Toaster } from "@/components/ui/sonner";
+import { AdminAuthProvider } from "@/lib/admin-auth";
 
 function NotFoundComponent() {
   return (
@@ -96,23 +97,25 @@ function RootComponent() {
   const isAdmin = path.startsWith("/admin");
   return (
     <QueryClientProvider client={queryClient}>
-      {isAdmin ? (
-        <>
-          <Outlet />
-          <Toaster position="top-center" richColors />
-        </>
-      ) : (
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <main className="flex-1 pb-20 lg:pb-0">
+      <AdminAuthProvider>
+        {isAdmin ? (
+          <>
             <Outlet />
-          </main>
-          <Footer />
-          <BottomNav />
-          <CartDrawer />
-          <Toaster position="top-center" richColors />
-        </div>
-      )}
+            <Toaster position="top-center" richColors />
+          </>
+        ) : (
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-1 pb-20 lg:pb-0">
+              <Outlet />
+            </main>
+            <Footer />
+            <BottomNav />
+            <CartDrawer />
+            <Toaster position="top-center" richColors />
+          </div>
+        )}
+      </AdminAuthProvider>
     </QueryClientProvider>
   );
 }
