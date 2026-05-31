@@ -5,11 +5,12 @@ import { formatLKR, useCart } from "@/lib/shop";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 export function ProductCard({ p }: { p: Product }) {
   const add = useCart((s) => s.add);
   const qc = useQueryClient();
-  const { data: { user } } = supabase.auth.getUser();
+  const { user } = useAuth();
 
   // Check if product is in wishlist
   const { data: wishlist } = useQuery({
