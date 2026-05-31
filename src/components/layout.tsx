@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Search, User, ShoppingCart, Truck, ShieldCheck, RotateCcw, Home, LayoutGrid, Tag, UserCircle2 } from "lucide-react";
 import { useCart } from "@/lib/shop";
@@ -15,8 +16,14 @@ export function AnnounceBar() {
 }
 
 export function Header() {
+  const [mounted, setMounted] = useState(false);
   const count = useCart((s) => s.count());
   const openCart = useCart((s) => s.open);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const nav = [
     { to: "/", label: "Home" },
     { to: "/shop", label: "Shop" },
@@ -25,6 +32,7 @@ export function Header() {
     { to: "/shop", label: "Deals" },
     { to: "/contact", label: "Contact Us" },
   ];
+
   return (
     <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border">
       <AnnounceBar />
@@ -42,9 +50,11 @@ export function Header() {
           <button aria-label="Account" className="p-2 rounded-full hover:bg-secondary transition-colors hidden sm:inline-flex"><User className="size-5" /></button>
           <button onClick={openCart} aria-label="Cart" className="relative p-2 rounded-full hover:bg-secondary transition-colors">
             <ShoppingCart className="size-5" />
-            <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 min-w-4 flex items-center justify-center px-1">
-              {count}
-            </span>
+            {mounted && count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 min-w-4 flex items-center justify-center px-1">
+                {count}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -53,8 +63,14 @@ export function Header() {
 }
 
 export function BottomNav() {
+  const [mounted, setMounted] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   const count = useCart((s) => s.count());
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const items = [
     { to: "/", label: "Home", Icon: Home },
     { to: "/shop", label: "Shop", Icon: LayoutGrid },
@@ -62,6 +78,7 @@ export function BottomNav() {
     { to: "/cart", label: "Cart", Icon: ShoppingCart, badge: count },
     { to: "/account", label: "Account", Icon: UserCircle2 },
   ];
+
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-md border-t border-border pb-[env(safe-area-inset-bottom)]">
       <div className="grid grid-cols-5">
@@ -71,7 +88,7 @@ export function BottomNav() {
             <Link key={i} to={to} className="flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium relative">
               <span className={"relative " + (active ? "text-primary" : "text-muted-foreground")}>
                 <Icon className="size-5" />
-                {badge ? (
+                {mounted && badge ? (
                   <span className="absolute -top-1.5 -right-2 bg-primary text-primary-foreground text-[9px] font-bold rounded-full size-4 min-w-4 px-1 flex items-center justify-center">{badge}</span>
                 ) : null}
               </span>

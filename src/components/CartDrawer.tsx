@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, ShoppingBag, X, ShieldCheck, Truck } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useCart, formatLKR } from "@/lib/shop";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -55,11 +55,16 @@ export function CartDrawer() {
         className="w-full sm:max-w-md p-0 flex flex-col gap-0 bg-background [&>button]:hidden"
       >
         <SheetHeader className="px-5 py-4 border-b border-border flex-row items-center justify-between space-y-0">
-          <SheetTitle className="flex items-center gap-2 text-base font-bold">
-            <ShoppingBag className="size-5 text-primary" />
-            Your Cart
-            <span className="text-muted-foreground font-medium">({count})</span>
-          </SheetTitle>
+          <div className="flex flex-col">
+            <SheetTitle className="flex items-center gap-2 text-base font-bold">
+              <ShoppingBag className="size-5 text-primary" />
+              Your Cart
+              <span className="text-muted-foreground font-medium">({count})</span>
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              Manage the items you've added to your shopping cart before checkout.
+            </SheetDescription>
+          </div>
           <button
             onClick={close}
             aria-label="Close"

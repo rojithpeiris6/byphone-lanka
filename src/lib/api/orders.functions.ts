@@ -22,7 +22,7 @@ const orderSchema = z.object({
 });
 
 export const placeOrder = createServerFn({ method: "POST" })
-  .validator(orderSchema)
+  .inputValidator(orderSchema)
   .handler(async ({ data }) => {
     const { customer, shippingMethod, paymentMethod, items } = data;
 
@@ -42,7 +42,6 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (pError || !product) throw new Error(`Product ${item.productId} not found`);
 
       // Basic stock check (for products without variants)
-      // Note: In a full implementation, we would check specific variant stock here
       if (product.stock_quantity < item.qty) {
         throw new Error(`Insufficient stock for ${product.name}. Only ${product.stock_quantity} left.`);
       }
@@ -130,7 +129,6 @@ export const placeOrder = createServerFn({ method: "POST" })
     for (const update of stockUpdates) {
       const table = update.table === 'products' ? 'products' : 'product_variants';
       
-      // Fetch current stock one last time to avoid race conditions (simplified)
       const { data: current } = await supabaseAdmin
         .from(table)
         .select("stock_quantity")
