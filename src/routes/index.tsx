@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle } from "lucide-react";
-import hero from "@/assets/hero-phones.jpg";
+import heroDefault from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
@@ -37,6 +37,21 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
 
 function Home() {
   const now = new Date().toISOString();
+
+  // Fetch Homepage Settings
+  const { data: heroSettings } = useQuery({
+    queryKey: ["home-hero-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_hero").single();
+      return data?.value as any;
+    }
+  });
+
+  const heroContent = {
+    title: heroSettings?.title || "Latest Phones. Best Prices.",
+    description: heroSettings?.description || "Discover the newest smartphones from top brands at unbeatable prices. 100% original with official warranty.",
+    image: heroSettings?.image || heroDefault
+  };
 
   // Helper to get active flash sale product IDs
   const { data: activeFlashSaleIds } = useQuery({
@@ -186,11 +201,10 @@ function Home() {
                 <Sparkles className="size-3" /> NEW ARRIVAL
               </span>
               <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
-                Latest Phones. <br />
-                <span className="text-primary">Best Prices.</span>
+                {heroContent.title}
               </h1>
               <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
-                Discover the newest smartphones from top brands at unbeatable prices. 100% original with official warranty.
+                {heroContent.description}
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link to="/shop" className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-bold hover:bg-primary-dark transition-colors shadow-[var(--shadow-soft)]">
@@ -207,7 +221,7 @@ function Home() {
               </div>
             </div>
             <div className="relative h-64 sm:h-80 lg:h-[520px]">
-              <img src={hero} alt="Latest flagship smartphones" width={1536} height={1152} className="absolute inset-0 h-full w-full object-cover object-center" />
+              <img src={heroContent.image} alt="Hero Banner" className="absolute inset-0 h-full w-full object-cover object-center" />
             </div>
           </div>
         </div>

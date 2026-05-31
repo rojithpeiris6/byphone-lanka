@@ -4,17 +4,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Truck, CreditCard, Share2, Save, 
   Loader2, Globe, Mail, Phone, MapPin, 
-  ShieldCheck, RefreshCcw, Bell
+  ShieldCheck, RefreshCcw, Bell, Layout
 } from "lucide-react";
-import { getSettings, updateSetting } from "@/lib/api/settings.functions";
+import { getSettings } from "@/lib/api/settings.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 export const Route = createFileRoute("/admin/settings")({
   component: SettingsPage,
 });
 
-type SettingsTab = 'general' | 'shipping' | 'payments' | 'social';
+type SettingsTab = 'general' | 'homepage' | 'shipping' | 'payments' | 'social';
 
 function SettingsPage() {
   const qc = useQueryClient();
@@ -37,7 +39,16 @@ function SettingsPage() {
   async function handleSave(key: string) {
     setIsSubmitting(true);
     try {
-      await updateSetting({ data: { key, value: form[key] } });
+      const { error } = await (supabase as any)
+        .from("settings")
+        .upsert({ 
+          key, 
+          value: form[key],
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      
       toast.success("Settings updated successfully");
       qc.invalidateQueries({ queryKey: ["admin-settings"] });
     } catch (e: any) {
@@ -77,6 +88,7 @@ function SettingsPage() {
         <div className="w-full lg:w-64 shrink-0">
           <div className="bg-card border border-border rounded-2xl p-2 sticky top-24">
             <TabButton active={activeTab === 'general'} onClick={() => setActiveTab('general')} icon={Store} label="General" />
+            <TabButton active={activeTab === 'homepage'} onClick={() => setActiveTab('homepage')} icon={Layout} label="Homepage" />
             <TabButton active={activeTab === 'shipping'} onClick={() => setActiveTab('shipping')} icon={Truck} label="Shipping" />
             <TabButton active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} icon={CreditCard} label="Payments" />
             <TabButton active={activeTab === 'social'} onClick={() => setActiveTab('social')} icon={Share2} label="Social Links" />
@@ -111,6 +123,32 @@ function SettingsPage() {
                 <div className="sm:col-span-2">
                   <Field label="Store Address" icon={MapPin}>
                     <textarea rows={3} className={cn(inputCls, "h-auto py-2")} value={form.store_info?.address || ""} onChange={e => updateForm('store_info', 'address', e.target.value)} />
+                  </Field>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {activeTab === 'homepage' && (
+            <Section 
+              title="Homepage Content" 
+              desc="Customize the main hero section of your homepage."
+              onSave={() => handleSave('homepage_hero')}
+              isSaving={isSaving}
+            >
+              <div className="space-y-6">
+                <ImageUpload 
+                  label="Hero Image" 
+                  value={form.homepage_hero?.image} 
+                  bucket="shop" 
+                  onChange={url => updateForm('homepage_hero', 'image', url)} 
+                />
+                <div className="grid gap-4">
+                  <Field label="Hero Title">
+                    <input className={inputCls} value={form.homepage_hero?.title || ""} onChange={e => updateForm('homepage_hero', 'title', e.target.value)} />
+                  </Field>
+                  <Field label="Hero Description">
+                    <textarea rows={3} className={cn(inputCls, "h-auto py-2")} value={form.homepage_hero?.description || ""} onChange={e => updateForm('homepage_hero', 'description', e.target.value)} />
                   </Field>
                 </div>
               </div>
