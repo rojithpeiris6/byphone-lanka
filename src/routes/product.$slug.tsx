@@ -174,7 +174,7 @@ function ProductPage() {
               <Timer className="size-5 text-rose-600 shrink-0 animate-spin duration-3000" />
               <div>
                 <p className="text-xs font-bold text-rose-600 uppercase tracking-wide">Limited Time Left</p>
-                <div className="mt-0.5"><FlashSaleTimer expiresAt={p.activeFlashSale.end_at} className="text-rose-600 text-sm sm:text-base font-black" /></div>
+                <div className="mt-0.5"><FlashSaleTimer expiresAt={p.activeFlashSale.end_at} className="text-rose-600 text-xs" /></div>
               </div>
             </div>
           )}
@@ -212,7 +212,7 @@ function ProductPage() {
                     onClick={() => setSelectedVariantId(v.id)} 
                     disabled={v.stock_quantity <= 0}
                     className={cn(
-                      "flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left transition-all",
+                      "flex items-center px-4 py-3 rounded-xl border-2 text-left transition-all",
                       selectedVariantId === v.id 
                         ? "border-primary bg-primary-soft text-primary ring-2 ring-primary/20" 
                         : "border-border hover:border-foreground/30",
@@ -224,9 +224,6 @@ function ProductPage() {
                       <p className="text-[11px] text-muted-foreground">
                         {v.stock_quantity <= 0 ? "Out of stock" : `Stock: ${v.stock_quantity} units`}
                       </p>
-                    </div>
-                    <div className="text-sm font-extrabold">
-                      {v.price_diff !== 0 ? `+${formatLKR(v.price_diff)}` : "Base Price"}
                     </div>
                   </button>
                 ))}
