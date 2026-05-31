@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2, Timer } from "lucide-react";
+import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2, Timer, MessageSquare, Send, Loader2 } from "lucide-react";
 import { products, formatLKR, useCart, type Product } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
@@ -76,8 +76,14 @@ function ProductPage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState<"specs" | "desc" | "reviews" | "warranty">("specs");
 
+  // Review states
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   const { user } = useAuth();
 
+  // Check if product is in wishlist
   const { data: wishlist } = useQuery({
     queryKey: ["wishlist", user?.id, p.id],
     queryFn: async () => {
@@ -89,6 +95,51 @@ function ProductPage() {
         .eq("product_id", p.id)
         .single();
       return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch reviews for this product from public.product_reviews
+  const { data: productReviews, isLoading: loadingReviews } = useQuery({
+    queryKey: ["product-reviews-list", p.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_reviews" as any)
+        .select("*")
+        .eq("product_id", p.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Check if user has purchased this product
+  const { data: hasPurchasedProduct } = useQuery({
+    queryKey: ["user-has-purchased-product", user?.id, p.id],
+    queryFn: async () => {
+      if (!user) return false;
+
+      // 1. Get all delivered orders belonging to this user
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "delivered");
+
+      if (ordersError || !orders || orders.length === 0) return false;
+
+      const orderIds = orders.map(o => o.id);
+
+      // 2. See if any of those orders contained this product
+      const { data: items, error: itemsError } = await supabase
+        .from("order_items")
+        .select("id")
+        .in("order_id", orderIds)
+        .eq("product_id", p.id)
+        .limit(1);
+
+      if (itemsError) return false;
+      return (items && items.length > 0);
     },
     enabled: !!user,
   });
@@ -147,6 +198,45 @@ function ProductPage() {
     const parts = [v.storage, v.color, v.ram, v.network].filter(Boolean);
     return parts.join(" / ");
   };
+
+  async function handleReviewSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return toast.error("You must be logged in to leave a review.");
+    if (!reviewComment.trim()) return toast.error("Please write a comment.");
+
+    setIsSubmittingReview(true);
+    try {
+      // Fetch user profile metadata
+      const { data: customerProfile } = await supabase
+        .from("customers")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .single();
+
+      const customerName = customerProfile?.full_name || user.email?.split("@")[0] || "Verified Buyer";
+
+      const { error } = await supabase
+        .from("product_reviews" as any)
+        .insert({
+          product_id: p.id,
+          user_id: user.id,
+          customer_name: customerName,
+          rating: reviewRating,
+          comment: reviewComment.trim(),
+        });
+
+      if (error) throw error;
+
+      toast.success("Review submitted! Thank you.");
+      setReviewComment("");
+      setReviewRating(5);
+      qc.invalidateQueries({ queryKey: ["product-reviews-list", p.id] });
+    } catch (error: any) {
+      toast.error("Failed to submit review: " + error.message);
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-32 lg:pb-6">
@@ -308,14 +398,101 @@ function ProductPage() {
             </div>
           )}
           {tab === "reviews" && (
-            <div className="max-w-2xl space-y-4">
-              {[{ n: "Ruwan", r: 5, c: "Original product, came sealed. Super fast delivery." }, { n: "Nimal", r: 4, c: "Great phone, excellent service from byphone." }].map((rv) => (
-                <div key={rv.n} className="rounded-xl border border-border p-4">
-                  <div className="flex gap-0.5 text-amber-400">{Array.from({ length: rv.r }).map((_, i) => <Star key={i} className="size-4 fill-amber-400" />)}</div>
-                  <p className="mt-2 text-sm">{rv.c}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">— {rv.n}</p>
+            <div className="max-w-3xl space-y-8">
+              {/* Write a Review Section */}
+              {user ? (
+                hasPurchasedProduct ? (
+                  <div className="bg-primary-soft/50 border border-primary/10 rounded-2xl p-5 sm:p-6 space-y-4">
+                    <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
+                      <MessageSquare className="size-4" /> Share Your Experience
+                    </div>
+                    <form onSubmit={handleReviewSubmit} className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Rating</label>
+                        <div className="flex items-center gap-1.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              className="focus:outline-none transition-transform hover:scale-110"
+                            >
+                              <Star className={`size-6 ${star <= reviewRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Your Review</label>
+                        <textarea
+                          rows={4}
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder="What did you like or dislike about this product? Sharing your authentic experience helps other shoppers make better choices."
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:border-primary outline-none transition-all resize-none"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmittingReview}
+                        className="h-11 px-6 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider hover:bg-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isSubmittingReview ? (
+                          <>
+                            <Loader2 className="size-4 animate-spin" /> Submitting...
+                          </>
+                        ) : (
+                          <>
+                            Submit Review <Send className="size-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="bg-muted/40 border border-border/50 rounded-2xl p-5 text-center text-sm text-muted-foreground">
+                    Only verified buyers who have purchased this product can leave a review.
+                  </div>
+                )
+              ) : (
+                <div className="bg-muted/40 border border-border/50 rounded-2xl p-5 text-center text-sm text-muted-foreground">
+                  Please sign in to write a review. Only customers who purchased this product can review.
                 </div>
-              ))}
+              )}
+
+              {/* Reviews List */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-primary">Customer Feedback</h4>
+                {loadingReviews ? (
+                  <div className="py-6 text-center text-muted-foreground text-sm">Loading reviews...</div>
+                ) : !productReviews || productReviews.length === 0 ? (
+                  <div className="py-6 text-center text-muted-foreground text-sm italic">
+                    No reviews yet. Be the first verified purchaser to leave feedback!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {productReviews.map((rv: any) => (
+                      <div key={rv.id} className="rounded-xl border border-border p-4 bg-card shadow-sm space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm text-foreground">{rv.customer_name}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(rv.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex gap-0.5 text-amber-400">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`size-3.5 ${i < rv.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                          ))}
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed italic">"{rv.comment}"</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           {tab === "warranty" && (
