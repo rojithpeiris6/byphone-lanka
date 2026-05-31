@@ -6,7 +6,6 @@ type AdminUser = {
   id: string;
   email: string;
   created_at: string;
-  role: string | null;
 };
 
 type AdminAuthCtx = {
@@ -23,64 +22,32 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function initializeAuth() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (isMounted && session?.user) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .maybeSingle();
-
-          if (isMounted) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email ?? "",
-              created_at: session.user.created_at,
-              role: roleData?.role ?? null,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error initializing admin auth:", error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return;
-
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-
         setUser({
           id: session.user.id,
           email: session.user.email ?? "",
           created_at: session.user.created_at,
-          role: roleData?.role ?? null,
+        });
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? "",
+          created_at: session.user.created_at,
         });
       } else {
         setUser(null);
       }
     });
 
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   async function signIn(email: string, password: string) {
