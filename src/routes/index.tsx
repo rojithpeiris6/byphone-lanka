@@ -78,7 +78,7 @@ function HeroSlide({ slide }: { slide: any }) {
           </div>
         </div>
         <div className="relative h-64 sm:h-80 lg:h-[520px]">
-          <img src={slide.image || heroDefault} alt={slide.title} className="absolute inset-0 h-full w-full object-cover object-center" />
+          <img src={slide.image || heroDefault} alt={slide.title || "Hero Banner"} className="absolute inset-0 h-full w-full object-cover object-center" />
         </div>
       </div>
     </div>
@@ -92,9 +92,15 @@ function Home() {
   const { data: heroSettings } = useQuery({
     queryKey: ["home-hero-settings"],
     queryFn: async () => {
-      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_hero").single();
-      const val = data?.value;
-      return (Array.isArray(val) ? val : val ? [val] : []) as any[];
+      try {
+        const { data, error } = await supabase.from("settings").select("value").eq("key", "homepage_hero").maybeSingle();
+        if (error) throw error;
+        const val = data?.value;
+        return (Array.isArray(val) ? val : val ? [val] : []) as any[];
+      } catch (e) {
+        console.warn("Could not fetch hero settings:", e);
+        return [];
+      }
     }
   });
 
@@ -105,7 +111,7 @@ function Home() {
     link: "/shop"
   }];
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, skipSnaps: false }, [Autoplay({ delay: 5000, stopOnInteraction: false })]);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 5000 })]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const onSelect = useCallback(() => {
@@ -123,14 +129,18 @@ function Home() {
   const { data: activeFlashSaleIds } = useQuery({
     queryKey: ["home-active-flash-sale-ids"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("flash_sales")
-        .select("product_id")
-        .eq("is_active", true)
-        .lte("start_at", now)
-        .gte("end_at", now);
-      if (error) throw error;
-      return data?.map(s => s.product_id) ?? [];
+      try {
+        const { data, error } = await supabase
+          .from("flash_sales")
+          .select("product_id")
+          .eq("is_active", true)
+          .lte("start_at", now)
+          .gte("end_at", now);
+        if (error) return [];
+        return data?.map(s => s.product_id) ?? [];
+      } catch (e) {
+        return [];
+      }
     }
   });
 
@@ -138,15 +148,19 @@ function Home() {
   const { data: dbCategories } = useQuery({
     queryKey: ["home-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("name, image, slug")
-        .eq("status", "active")
-        .is("parent_id", null)
-        .order("sort_order")
-        .limit(6);
-      if (error) throw error;
-      return data ?? [];
+      try {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("name, image, slug")
+          .eq("status", "active")
+          .is("parent_id", null)
+          .order("sort_order")
+          .limit(6);
+        if (error) return [];
+        return data ?? [];
+      } catch (e) {
+        return [];
+      }
     },
   });
 
@@ -154,105 +168,122 @@ function Home() {
   const { data: dbBrands } = useQuery({
     queryKey: ["home-brands-visual"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("brands")
-        .select("name, logo, slug")
-        .eq("status", "active")
-        .order("name");
-      if (error) throw error;
-      return data ?? [];
+      try {
+        const { data, error } = await supabase
+          .from("brands")
+          .select("name, logo, slug")
+          .eq("status", "active")
+          .order("name");
+        if (error) return [];
+        return data ?? [];
+      } catch (e) {
+        return [];
+      }
     },
   });
 
-  // Fetch Popular Products - Exclude Flash Sale Items
+  // Fetch Popular Products
   const { data: dbPopular } = useQuery({
     queryKey: ["home-popular", activeFlashSaleIds],
     queryFn: async () => {
-      const idsToExclude = activeFlashSaleIds || [];
-      let query = supabase
-        .from("products")
-        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-        .eq("status", "active");
-      
-      if (idsToExclude.length > 0) {
-        query = query.not("id", "in", `(${idsToExclude.join(',')})`);
-      }
+      try {
+        const idsToExclude = activeFlashSaleIds || [];
+        let query = supabase
+          .from("products")
+          .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
+          .eq("status", "active");
+        
+        if (idsToExclude.length > 0) {
+          query = query.not("id", "in", `(${idsToExclude.join(',')})`);
+        }
 
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(10);
-      if (error) throw error;
-      return (data ?? []).map((p: any) => ({
-        ...p,
-        brand: p.brands?.name || "Unknown Brand",
-        category: p.categories?.name || "General",
-        image: p.product_images?.[0]?.url || "",
-        oldPrice: p.discount_price ? p.price : undefined,
-        price: p.discount_price || p.price,
-      }));
-    },
-  });
-
-  // Fetch Flash Sales from the flash_sales table
-  const { data: dbFlashSales } = useQuery({
-    queryKey: ["home-flash-sales"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("flash_sales")
-        .select(`
-          sale_price,
-          end_at,
-          products (
-            *,
-            brands(name),
-            categories!products_category_id_fkey(name),
-            product_images(url)
-          )
-        `)
-        .eq("is_active", true)
-        .lte("start_at", now)
-        .gte("end_at", now)
-        .limit(8);
-      
-      if (error) throw error;
-
-      return (data ?? []).map((s: any) => {
-        const p = s.products;
-        return {
+        const { data, error } = await query.order("created_at", { ascending: false }).limit(10);
+        if (error) return [];
+        return (data ?? []).map((p: any) => ({
           ...p,
-          endDate: s.end_at,
           brand: p.brands?.name || "Unknown Brand",
           category: p.categories?.name || "General",
           image: p.product_images?.[0]?.url || "",
-          oldPrice: p.price,
-          price: s.sale_price,
-        };
-      });
+          oldPrice: p.discount_price ? p.price : undefined,
+          price: p.discount_price || p.price,
+        }));
+      } catch (e) {
+        return [];
+      }
     },
   });
 
-  // Fetch New Arrivals - Exclude Flash Sale Items
+  // Fetch Flash Sales
+  const { data: dbFlashSales } = useQuery({
+    queryKey: ["home-flash-sales"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from("flash_sales")
+          .select(`
+            sale_price,
+            end_at,
+            products (
+              *,
+              brands(name),
+              categories!products_category_id_fkey(name),
+              product_images(url)
+            )
+          `)
+          .eq("is_active", true)
+          .lte("start_at", now)
+          .gte("end_at", now)
+          .limit(8);
+        
+        if (error) return [];
+
+        return (data ?? []).map((s: any) => {
+          const p = s.products;
+          if (!p) return null;
+          return {
+            ...p,
+            endDate: s.end_at,
+            brand: p.brands?.name || "Unknown Brand",
+            category: p.categories?.name || "General",
+            image: p.product_images?.[0]?.url || "",
+            oldPrice: p.price,
+            price: s.sale_price,
+          };
+        }).filter(Boolean);
+      } catch (e) {
+        return [];
+      }
+    },
+  });
+
+  // Fetch New Arrivals
   const { data: dbNewArrivals } = useQuery({
     queryKey: ["home-new-arrivals", activeFlashSaleIds],
     queryFn: async () => {
-      const idsToExclude = activeFlashSaleIds || [];
-      let query = supabase
-        .from("products")
-        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-        .eq("status", "active");
+      try {
+        const idsToExclude = activeFlashSaleIds || [];
+        let query = supabase
+          .from("products")
+          .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
+          .eq("status", "active");
 
-      if (idsToExclude.length > 0) {
-        query = query.not("id", "in", `(${idsToExclude.join(',')})`);
+        if (idsToExclude.length > 0) {
+          query = query.not("id", "in", `(${idsToExclude.join(',')})`);
+        }
+
+        const { data, error } = await query.order("created_at", { ascending: false }).limit(8);
+        if (error) return [];
+        return (data ?? []).map((p: any) => ({
+          ...p,
+          brand: p.brands?.name || "Unknown Brand",
+          category: p.categories?.name || "General",
+          image: p.product_images?.[0]?.url || "",
+          oldPrice: p.discount_price ? p.price : undefined,
+          price: p.discount_price || p.price,
+        }));
+      } catch (e) {
+        return [];
       }
-
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(8);
-      if (error) throw error;
-      return (data ?? []).map((p: any) => ({
-        ...p,
-        brand: p.brands?.name || "Unknown Brand",
-        category: p.categories?.name || "General",
-        image: p.product_images?.[0]?.url || "",
-        oldPrice: p.discount_price ? p.price : undefined,
-        price: p.discount_price || p.price,
-      }));
     },
   });
 
@@ -296,24 +327,26 @@ function Home() {
       </section>
 
       {/* CATEGORIES */}
-      <section className="mx-auto max-w-7xl px-4 mt-14">
-        <div className="text-center">
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">SHOP BY CATEGORY</h2>
-        </div>
-        <div className="mt-6 flex lg:grid lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
-          {dbCategories?.map((c) => (
-            <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
-              <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
-                <img src={c.image || ""} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
-              </div>
-              <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
-            </Link>
-          ))}
-        </div>
-        <div className="mt-6 text-center">
-          <Link to="/categories" className="inline-flex items-center gap-1 text-primary text-sm font-bold">VIEW ALL CATEGORIES <ChevronRight className="size-4" /></Link>
-        </div>
-      </section>
+      {dbCategories && dbCategories.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 mt-14">
+          <div className="text-center">
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">SHOP BY CATEGORY</h2>
+          </div>
+          <div className="mt-6 flex lg:grid lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
+            {dbCategories.map((c) => (
+              <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
+                <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
+                  <img src={c.image || ""} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+                </div>
+                <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <Link to="/categories" className="inline-flex items-center gap-1 text-primary text-sm font-bold">VIEW ALL CATEGORIES <ChevronRight className="size-4" /></Link>
+          </div>
+        </section>
+      )}
 
       {/* FLASH SALES */}
       {dbFlashSales && dbFlashSales.length > 0 && (
@@ -328,7 +361,7 @@ function Home() {
             <Link to="/deals" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">View All Deals <ChevronRight className="size-4" /></Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-            {dbFlashSales.map((p) => (
+            {dbFlashSales.map((p: any) => (
               <div key={p.id} className="group relative">
                 <div className="absolute top-2.5 right-2.5 z-20 bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-lg border border-rose-500/30">
                   <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white text-xs sm:text-xs" />
@@ -341,15 +374,17 @@ function Home() {
       )}
 
       {/* POPULAR PHONES */}
-      <section className="mx-auto max-w-7xl px-4 mt-14">
-        <div className="flex items-end justify-between mb-5">
-          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">POPULAR PHONES</h2>
-          <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-          {dbPopular?.map((p) => <ProductCard key={p.id} p={p} />)}
-        </div>
-      </section>
+      {dbPopular && dbPopular.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 mt-14">
+          <div className="flex items-end justify-between mb-5">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">POPULAR PHONES</h2>
+            <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
+            {dbPopular.map((p) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        </section>
+      )}
 
       {/* NEW ARRIVALS */}
       {dbNewArrivals && dbNewArrivals.length > 0 && (
@@ -385,25 +420,27 @@ function Home() {
       </section>
 
       {/* BRANDS VISUAL */}
-      <section className="mx-auto max-w-7xl px-4 mt-14">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center">SHOP BY BRAND</h2>
-          <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
-        </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
-          {dbBrands?.map((b) => (
-            <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group aspect-square rounded-2xl border border-border bg-card grid place-items-center p-4 transition-all hover:border-primary hover:shadow-sm">
-              <div className="size-12 rounded-full bg-muted overflow-hidden grid place-items-center p-2 group-hover:scale-110 transition-transform">
-                {b.logo ? (
-                  <img src={b.logo} alt={b.name} className="size-full object-contain" />
-                ) : (
-                  <span className="text-[10px] font-bold text-muted-foreground">{b.name}</span>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {dbBrands && dbBrands.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 mt-14">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center">SHOP BY BRAND</h2>
+            <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
+            {dbBrands.map((b) => (
+              <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group aspect-square rounded-2xl border border-border bg-card grid place-items-center p-4 transition-all hover:border-primary hover:shadow-sm">
+                <div className="size-12 rounded-full bg-muted overflow-hidden grid place-items-center p-2 group-hover:scale-110 transition-transform">
+                  {b.logo ? (
+                    <img src={b.logo} alt={b.name} className="size-full object-contain" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-muted-foreground">{b.name}</span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* NEWSLETTER */}
       <section className="mx-auto max-w-7xl px-4 mt-14">
