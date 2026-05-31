@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { 
   LogOut, User, Mail, Phone, Package, Heart, 
   Save, X, ArrowRight, MapPin, Settings, 
-  CreditCard, Bell, ShoppingBag, ChevronRight 
+  CreditCard, Bell, ShoppingBag, ChevronRight, Timer
 } from "lucide-react";
 import { toast } from "sonner";
 import { ProductCard } from "@/components/ProductCard";
@@ -426,7 +426,14 @@ function WishlistView({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("wishlist")
-        .select("*, products(*, product_images(url))")
+        .select(`
+          *, 
+          products(
+            *, 
+            product_images(url),
+            flash_sales(*)
+          )
+        `)
         .eq("user_id", userId);
       if (error) throw error;
       return data ?? [];
@@ -458,6 +465,17 @@ function WishlistView({ userId }: { userId: string }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {wishlist?.map((item: any) => {
             const p = item.products as any;
+            const now = new Date().toISOString();
+            const activeFlashSale = p.flash_sales?.find((s: any) => 
+              s.is_active && 
+              new Date(s.start_at) <= new Date(now) && 
+              new Date(s.end_at) >= new Date(now)
+            );
+            
+            const displayPrice = activeFlashSale ? activeFlashSale.sale_price : (p.discount_price || p.price);
+            const hasOldPrice = activeFlashSale || p.discount_price;
+            const oldPrice = activeFlashSale ? p.price : (p.discount_price ? p.price : null);
+
             return (
               <div key={item.id} className="group relative bg-card rounded-3xl border border-border p-4 flex flex-col transition-all hover:shadow-lg hover:border-primary/50">
                 <button 
@@ -466,19 +484,38 @@ function WishlistView({ userId }: { userId: string }) {
                 >
                   <X className="size-4 mx-auto" />
                 </button>
+                
+                {activeFlashSale && (
+                  <div className="absolute top-3 left-3 z-10 bg-rose-600 text-white px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                    <Timer className="size-3" /> FLASH SALE
+                  </div>
+                )}
+
                 <div className="aspect-square rounded-2xl bg-muted/50 overflow-hidden mb-4 grid place-items-center">
                   <img src={p.product_images?.[0]?.url || ""} alt={p.name} className="h-full w-full object-contain p-3 transition-transform group-hover:scale-105" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-bold truncate">{p.name}</p>
-                  <p className="text-base font-extrabold text-primary mt-1">{formatLKR(p.discount_price || p.price)}</p>
+                  <div className="mt-1 flex items-baseline gap-2 flex-wrap">
+                    <p className={cn("text-base font-extrabold", activeFlashSale ? "text-rose-600" : "text-primary")}>
+                      {formatLKR(displayPrice)}
+                    </p>
+                    {hasOldPrice && (
+                      <p className="text-xs text-muted-foreground line-through">
+                        {formatLKR(oldPrice!)}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <button 
                   onClick={() => {
                     add(p.id);
                     toast.success("Added to cart");
                   }}
-                  className="mt-4 w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm"
+                  className={cn(
+                    "mt-4 w-full py-2.5 rounded-xl text-xs font-bold transition-colors shadow-sm",
+                    activeFlashSale ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-primary text-primary-foreground hover:bg-primary-dark"
+                  )}
                 >
                   ADD TO CART
                 </button>
