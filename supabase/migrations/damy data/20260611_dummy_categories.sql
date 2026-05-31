@@ -4,9 +4,9 @@ SET session_replication_role = 'replica';
 -- Clear existing categories to avoid duplicates during testing
 DELETE FROM public.categories;
 
--- 1. Create Parent Categories with verified Unsplash URLs
+-- 1. Create Parent Categories first
 INSERT INTO public.categories (name, slug, description, image, sort_order, status) VALUES
-('Smartphones', 'smartphones', 'The latest flagship and mid-range mobile phones from top brands.', 'https://images.unsplash.com/photo-1511707171634-5f897ca44fca?q=80&w=800&auto=format&fit=crop', 1, 'active'),
+('Smartphones', 'smartphones', 'The latest flagship and mid-range mobile phones from top brands.', 'https://images.unsplash.com/photo-1511707171634-5f8//9ca44fca?q=80&w=800&auto=format&fit=crop', 1, 'active'),
 ('Tablets', 'tablets', 'Powerful tablets for productivity, creativity, and entertainment.', 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=800&auto=format&fit=crop', 2, 'active'),
 ('Smartwatches', 'smartwatches', 'Stay connected and track your health with the latest wearables.', 'https://images.unsplash.com/photo-1544117518-30dd56753893?q=80&w=800&auto=format&fit=crop', 3, 'active'),
 ('Audio & Earbuds', 'audio-earbuds', 'Premium sound experiences with TWS and noise-cancelling headphones.', 'https://images.unsplash.com/photo-1505740420928-5e56471497c8?q=80&w=800&auto=format&fit=crop', 4, 'active'),
@@ -15,6 +15,7 @@ INSERT INTO public.categories (name, slug, description, image, sort_order, statu
 ('Pre-Owned', 'pre-owned', 'Certified refurbished devices with warranty and quality checks.', 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?q=80&w=800&auto=format&fit=crop', 7, 'active');
 
 -- 2. Create Sub-Categories (Referencing parent IDs)
+-- We use a subquery to get the parent_id for each category to ensure consistency
 DO $$ 
 DECLARE 
     smartphone_id UUID := (SELECT id FROM public.categories WHERE slug = 'smartphones');

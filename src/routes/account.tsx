@@ -294,12 +294,12 @@ function ProfileView({ profile, isLoading, isEditing, setIsEditing, editForm, se
         ) : (
           <div className="space-y-6">
             <div className="grid sm:grid-cols-2 gap-4">
-              <Input label="Full Name" value={editForm.full_name} onChange={(v) => setEditForm(f => ({ ...f, full_name: v }))} />
-              <Input label="Phone" value={editForm.phone} onChange={(v) => setEditForm(f => ({ ...f, phone: v }))} />
-              <Input label="City" value={editForm.city} onChange={(v) => setEditForm(f => ({ ...f, city: v }))} />
-              <Input label="District" value={editForm.district} onChange={(v) => setEditForm(f => ({ ...f, district: v }))} />
+              <Input label="Full Name" value={editForm.full_name} onChange={(v: string) => setEditForm((f: any) => ({ ...f, full_name: v }))} />
+              <Input label="Phone" value={editForm.phone} onChange={(v: string) => setEditForm((f: any) => ({ ...f, phone: v }))} />
+              <Input label="City" value={editForm.city} onChange={(v: string) => setEditForm((f: any) => ({ ...f, city: v }))} />
+              <Input label="District" value={editForm.district} onChange={(v: string) => setEditForm((f: any) => ({ ...f, district: v }))} />
               <div className="sm:col-span-2">
-                <Input label="Address" value={editForm.address} onChange={(v) => setEditForm(f => ({ ...f, address: v }))} full />
+                <Input label="Address" value={editForm.address} onChange={(v: string) => setEditForm((f: any) => ({ ...f, address: v }))} full />
               </div>
             </div>
             <div className="flex justify-end pt-4">
