@@ -71,7 +71,7 @@ function Home() {
         .select(`
           *,
           brands(name),
-          categories(name)
+          categories!products_category_id_fkey(name)
         `)
         .eq("status", "active")
         .order("rating", { ascending: false })

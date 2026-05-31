@@ -33,7 +33,7 @@ function ShopPage() {
         .select(`
           *,
           brands(name),
-          categories(name),
+          categories!products_category_id_fkey(name),
           product_images(url)
         `)
         .order("created_at", { ascending: false });
