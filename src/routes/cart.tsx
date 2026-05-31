@@ -20,7 +20,7 @@ function CartPage() {
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
   
-  // Fetch all products currently in the cart from DB, joining with flash_sales
+  // Fetch all products currently in the cart from DB, optionally checking for flash sales client-side
   const { data: dbProducts, isLoading: loadingProducts } = useQuery({
     queryKey: ["cart-products", items],
     queryFn: async () => {
@@ -32,17 +32,24 @@ function CartPage() {
         .select(`
           *, 
           product_images(url),
-          flash_sales(sale_price)
+          flash_sales(sale_price, is_active, start_at, end_at)
         `)
-        .in("id", ids)
-        .eq("flash_sales.is_active", true)
-        .lte("flash_sales.start_at", now)
-        .gte("flash_sales.end_at", now);
+        .in("id", ids);
+
       if (error) throw error;
-      return (data ?? []).map(p => ({
-        ...p,
-        image: p.product_images?.[0]?.url || "",
-      }));
+
+      return (data ?? []).map(p => {
+        const activeFlash = p.flash_sales?.find((s: any) => 
+          s.is_active && 
+          new Date(s.start_at) <= new Date(now) && 
+          new Date(s.end_at) >= new Date(now)
+        );
+        return {
+          ...p,
+          image: p.product_images?.[0]?.url || "",
+          active_flash_sale: activeFlash,
+        };
+      });
     },
   });
 
@@ -58,7 +65,7 @@ function CartPage() {
         if (!product) continue;
 
         // Priority: Flash Sale Price > Discount Price > Regular Price
-        let price = product.flash_sales?.[0]?.sale_price || product.discount_price || product.price;
+        let price = product.active_flash_sale?.sale_price || product.discount_price || product.price;
         
         if (item.variantId) {
           const { data: variant } = await supabase
@@ -157,7 +164,7 @@ function CartItemRow({ item, product, setQty, remove }: any) {
     enabled: !!variantId,
   });
 
-  const basePrice = product.flash_sales?.[0]?.sale_price || product.discount_price || product.price;
+  const basePrice = product.active_flash_sale?.sale_price || product.discount_price || product.price;
   const finalPrice = basePrice + (variant?.price_diff || 0);
   const variantLabel = variant ? [variant.storage, variant.color, variant.ram, variant.network].filter(Boolean).join(" / ") : "";
 

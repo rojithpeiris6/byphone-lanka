@@ -88,14 +88,11 @@ function Checkout() {
       const variantIds = items.filter(i => i.variantId).map(i => i.variantId!).filter(Boolean);
       const now = new Date().toISOString();
 
-      // Fetch products joined with active flash sales
+      // Fetch products
       const { data: dbProducts, error: pError } = await supabase
         .from("products")
-        .select(`*, product_images(url), flash_sales(sale_price)`)
-        .in("id", productIds)
-        .eq("flash_sales.is_active", true)
-        .lte("flash_sales.start_at", now)
-        .gte("flash_sales.end_at", now);
+        .select(`*, product_images(url), flash_sales(sale_price, is_active, start_at, end_at)`)
+        .in("id", productIds);
       if (pError) throw pError;
 
       // Fetch variants
@@ -110,10 +107,18 @@ function Checkout() {
       dbVariants?.forEach(v => { variantMap[v.id] = v; });
 
       return { 
-        products: (dbProducts ?? []).map(p => ({
-          ...p,
-          image: p.product_images?.[0]?.url || "",
-        })),
+        products: (dbProducts ?? []).map(p => {
+          const activeFlash = p.flash_sales?.find((s: any) => 
+            s.is_active && 
+            new Date(s.start_at) <= new Date(now) && 
+            new Date(s.end_at) >= new Date(now)
+          );
+          return {
+            ...p,
+            image: p.product_images?.[0]?.url || "",
+            active_flash_sale: activeFlash,
+          };
+        }),
         variants: variantMap 
       };
     },
@@ -128,7 +133,7 @@ function Checkout() {
       if (!product) return acc;
 
       // Priority: Flash Sale Price > Discount Price > Regular Price
-      let price = product.flash_sales?.[0]?.sale_price || product.discount_price || product.price;
+      let price = product.active_flash_sale?.sale_price || product.discount_price || product.price;
       if (item.variantId && cartData.variants[item.variantId]) {
         price += cartData.variants[item.variantId].price_diff;
       }
@@ -303,7 +308,7 @@ function Checkout() {
                   const variant = i.variantId ? cartData?.variants[i.variantId] : null;
                   
                   // Use Flash Sale price if available
-                  const basePrice = p.flash_sales?.[0]?.sale_price || p.discount_price || p.price;
+                  const basePrice = p.active_flash_sale?.sale_price || p.discount_price || p.price;
                   const finalPrice = basePrice + (variant?.price_diff || 0);
 
                   return (

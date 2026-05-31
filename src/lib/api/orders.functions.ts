@@ -38,17 +38,11 @@ export const placeOrder = createServerFn({ method: "POST" })
     const stockUpdates = [];
 
     for (const item of items) {
-      // Fetch product and active flash sale if exists
+      // Fetch product details
       const { data: product, error: pError } = await supabaseAdmin
         .from("products")
-        .select(`
-          id, price, name, sku, stock_quantity,
-          flash_sales(sale_price)
-        `)
+        .select("id, price, name, sku, stock_quantity, discount_price")
         .eq("id", item.productId)
-        .eq("flash_sales.is_active", true)
-        .lte("flash_sales.start_at", now)
-        .gte("end_at", now)
         .single();
 
       if (pError || !product) throw new Error(`Product ${item.productId} not found`);
@@ -58,8 +52,18 @@ export const placeOrder = createServerFn({ method: "POST" })
         throw new Error(`Insufficient stock for ${product.name}. Only ${product.stock_quantity} left.`);
       }
 
+      // Check if there is an active flash sale for this product
+      const { data: flashSale } = await supabaseAdmin
+        .from("flash_sales")
+        .select("sale_price")
+        .eq("product_id", item.productId)
+        .eq("is_active", true)
+        .lte("start_at", now)
+        .gte("end_at", now)
+        .maybeSingle();
+
       // Determine the correct price (Priority: Flash Sale > Regular Price)
-      let unitPrice = product.flash_sales?.[0]?.sale_price || product.price;
+      let unitPrice = flashSale?.sale_price || product.discount_price || product.price;
 
       // Fetch variant price difference if applicable
       if (item.variantId) {
