@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Lock, ChevronRight, Check, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones } from "lucide-react";
+import { Lock, ChevronRight, Check, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2 } from "lucide-react";
 import { useCart, getProduct, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
+import { placeOrder } from "@/lib/api/orders.functions";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -20,16 +21,69 @@ function Checkout() {
   const items = useCart((s) => s.items);
   const subtotal = useCart((s) => s.subtotal());
   const clear = useCart((s) => s.clear);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  
   const [delivery, setDelivery] = useState<"std" | "exp">("std");
   const [payment, setPayment] = useState("cod");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form state
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    district: "",
+    postalCode: "",
+  });
+
   const deliveryFee = delivery === "exp" ? 490 : 0;
   const total = subtotal + deliveryFee;
 
-  function placeOrder() {
-    toast.success("Order placed!", { description: "We'll contact you shortly to confirm." });
-    clear();
-    navigate({ to: "/" });
+  async function handlePlaceOrder() {
+    // Simple client-side validation
+    const required = ["name", "phone", "email", "address", "city", "district", "postalCode"];
+    const missing = required.filter(key => !form[key as keyof typeof form]);
+    
+    if (missing.length > 0) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await placeOrder({
+        data: {
+          customer: {
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+            address: form.address,
+            city: form.city,
+            district: form.district,
+            postalCode: form.postalCode,
+          },
+          shippingMethod: delivery,
+          paymentMethod: payment,
+          items: items.map(i => ({
+            productId: i.productId,
+            variantId: i.variantId,
+            qty: i.qty,
+          })),
+        },
+      });
+
+      toast.success("Order placed successfully!", { 
+        description: `Your order number is ${result.orderNumber}. We'll contact you shortly.` 
+      });
+      
+      clear();
+      navigate({ to: "/" });
+    } catch (e: any) {
+      toast.error("Order failed", { description: e.message });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -37,21 +91,6 @@ function Checkout() {
       <p className="text-xs text-muted-foreground"><Link to="/">Home</Link> <ChevronRight className="inline size-3" /> <Link to="/cart">Cart</Link> <ChevronRight className="inline size-3" /> <span className="text-foreground">Checkout</span></p>
       <h1 className="mt-3 text-3xl sm:text-4xl font-extrabold tracking-tight text-center">Checkout</h1>
       <p className="text-center text-xs text-muted-foreground mt-1 inline-flex items-center justify-center gap-1.5 w-full"><Lock className="size-3" /> Your information is secure and encrypted</p>
-
-      {/* Steps */}
-      <div className="mt-6 mx-auto max-w-2xl flex items-center">
-        {[1, 2, 3].map((n, i) => (
-          <div key={n} className="flex items-center flex-1 last:flex-none">
-            <div className="flex flex-col items-center">
-              <div className={"size-9 rounded-full grid place-items-center font-bold text-sm " + (step >= n ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground border border-border")}>
-                {step > n ? <Check className="size-4" /> : n}
-              </div>
-              <span className={"text-xs font-semibold mt-1 " + (step >= n ? "text-primary" : "text-muted-foreground")}>{["Shipping", "Payment", "Review"][n - 1]}</span>
-            </div>
-            {i < 2 && <div className={"flex-1 h-0.5 mx-2 " + (step > n ? "bg-primary" : "bg-border")} />}
-          </div>
-        ))}
-      </div>
 
       <div className="mt-8 grid lg:grid-cols-[1fr_380px] gap-6">
         <div className="space-y-5">
@@ -62,19 +101,29 @@ function Checkout() {
               <h2 className="text-lg font-extrabold">Shipping Information</h2>
             </div>
             <div className="mt-5 grid sm:grid-cols-2 gap-4">
-              <Field label="Full Name" placeholder="Enter your full name" full />
-              <Field label="Phone Number" placeholder="07X XXX XXXX" />
-              <Field label="Email Address" placeholder="youremail@gmail.com" type="email" />
-              <Field label="Address" placeholder="House no, Street name, Area" full />
-              <Field label="City / Town" placeholder="Enter your city" />
+              <Field label="Full Name" placeholder="Enter your full name" full 
+                value={form.name} onChange={(v) => setForm(f => ({ ...f, name: v }))} />
+              <Field label="Phone Number" placeholder="07X XXX XXXX" 
+                value={form.phone} onChange={(v) => setForm(f => ({ ...f, phone: v }))} />
+              <Field label="Email Address" placeholder="youremail@gmail.com" type="email" 
+                value={form.email} onChange={(v) => setForm(f => ({ ...f, email: v }))} />
+              <Field label="Address" placeholder="House no, Street name, Area" full 
+                value={form.address} onChange={(v) => setForm(f => ({ ...f, address: v }))} />
+              <Field label="City / Town" placeholder="Enter your city" 
+                value={form.city} onChange={(v) => setForm(f => ({ ...f, city: v }))} />
               <div>
                 <label className="text-sm font-semibold mb-1.5 block">District <span className="text-destructive">*</span></label>
-                <select className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm">
-                  <option>Select district</option>
-                  <option>Colombo</option><option>Gampaha</option><option>Kandy</option><option>Galle</option>
+                <select 
+                  value={form.district} 
+                  onChange={(e) => setForm(f => ({ ...f, district: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+                >
+                  <option value="">Select district</option>
+                  <option value="Colombo">Colombo</option><option value="Gampaha">Gampaha</option><option value="Kandy">Kandy</option><option value="Galle">Galle</option>
                 </select>
               </div>
-              <Field label="Postal Code" placeholder="Enter postal code" />
+              <Field label="Postal Code" placeholder="Enter postal code" 
+                value={form.postalCode} onChange={(v) => setForm(f => ({ ...f, postalCode: v }))} />
             </div>
 
             <p className="mt-6 mb-2 text-sm font-semibold">Delivery Method</p>
@@ -100,8 +149,13 @@ function Checkout() {
             </div>
             <div className="mt-6 flex items-center justify-between">
               <Link to="/cart" className="text-sm font-semibold text-primary inline-flex items-center gap-1">← Back to Cart</Link>
-              <button onClick={placeOrder} className="bg-primary text-primary-foreground rounded-xl px-6 py-3 text-sm font-bold hover:bg-primary-dark">
-                Place Order
+              <button 
+                onClick={handlePlaceOrder} 
+                disabled={isSubmitting}
+                className="bg-primary text-primary-foreground rounded-xl px-6 py-3 text-sm font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+                {isSubmitting ? "Processing..." : "Place Order"}
               </button>
             </div>
           </section>
@@ -117,7 +171,7 @@ function Checkout() {
             <div className="mt-4 space-y-3 max-h-72 overflow-y-auto pr-1">
               {items.length === 0 && <p className="text-sm text-muted-foreground">No items yet.</p>}
               {items.map((i) => {
-                const p = getProduct(i.id)!;
+                const p = getProduct(i.productId)!;
                 return (
                   <div key={i.id} className="flex gap-3">
                     <div className="size-14 rounded-lg bg-muted/40 shrink-0 overflow-hidden"><img src={p.image} alt={p.name} className="h-full w-full object-contain p-1" /></div>
@@ -151,16 +205,21 @@ function Checkout() {
           </div>
         </aside>
       </div>
-      <span className="sr-only">{step}</span>
     </div>
   );
 }
 
-function Field({ label, placeholder, type = "text", full }: { label: string; placeholder: string; type?: string; full?: boolean }) {
+function Field({ label, placeholder, type = "text", full, value, onChange }: { label: string; placeholder: string; type?: string; full?: boolean; value: string; onChange: (v: string) => void }) {
   return (
     <div className={full ? "sm:col-span-2" : ""}>
       <label className="text-sm font-semibold mb-1.5 block">{label} <span className="text-destructive">*</span></label>
-      <input type={type} placeholder={placeholder} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+      <input 
+        type={type} 
+        placeholder={placeholder} 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" 
+      />
     </div>
   );
 }
