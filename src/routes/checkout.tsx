@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Lock, ChevronRight, Check, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2 } from "lucide-react";
 import { useCart, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
 import { placeOrder } from "@/lib/api/orders.functions";
@@ -21,32 +21,68 @@ export const Route = createFileRoute("/checkout")({
 function Checkout() {
   const navigate = useNavigate();
   const items = useCart((s) => s.items);
-  const subtotal = useCart((s) => s.subtotal());
   const clear = useCart((s) => s.clear);
   
   const [delivery, setDelivery] = useState<"std" | "exp">("std");
   const [payment, setPayment] = useState("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch products in cart from DB for the summary
-  const { data: dbProducts, isLoading: loadingProducts } = useQuery({
-    queryKey: ["checkout-products", items],
+  // 1. Fetch real-time product and variant data from DB
+  const { data: cartData, isLoading: loadingProducts } = useQuery({
+    queryKey: ["checkout-data", items],
     queryFn: async () => {
-      if (items.length === 0) return [];
-      const ids = items.map(i => i.productId);
-      const { data, error } = await supabase
+      if (items.length === 0) return { products: [], variants: {} };
+      
+      const productIds = items.map(i => i.productId);
+      const variantIds = items.filter(i => i.variantId).map(i => i.variantId!).filter(Boolean);
+
+      // Fetch products
+      const { data: dbProducts, error: pError } = await supabase
         .from("products")
         .select(`*, product_images(url)`)
-        .in("id", ids);
-      if (error) throw error;
-      return (data ?? []).map(p => ({
-        ...p,
-        image: p.product_images?.[0]?.url || "",
-      }));
+        .in("id", productIds);
+      if (pError) throw pError;
+
+      // Fetch variants
+      const { data: dbVariants, error: vError } = await supabase
+        .from("product_variants")
+        .select("*")
+        .in("id", variantIds);
+      if (vError) throw vError;
+
+      // Map variants for easy lookup
+      const variantMap: Record<string, any> = {};
+      dbVariants?.forEach(v => { variantMap[v.id] = v; });
+
+      return { 
+        products: (dbProducts ?? []).map(p => ({
+          ...p,
+          image: p.product_images?.[0]?.url || "",
+        })),
+        variants: variantMap 
+      };
     },
   });
 
-  // Form state
+  // 2. Calculate subtotal based on ACTUAL DB prices
+  const subtotal = useMemo(() => {
+    if (!cartData?.products) return 0;
+    
+    return items.reduce((acc, item) => {
+      const product = cartData.products.find(p => p.id === item.productId);
+      if (!product) return acc;
+
+      let price = product.discount_price || product.price;
+      if (item.variantId && cartData.variants[item.variantId]) {
+        price += cartData.variants[item.variantId].price_diff;
+      }
+      return acc + (price * item.qty);
+    }, 0);
+  }, [items, cartData]);
+
+  const deliveryFee = delivery === "exp" ? 490 : 0;
+  const total = subtotal + deliveryFee;
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -57,15 +93,17 @@ function Checkout() {
     postalCode: "",
   });
 
-  const deliveryFee = delivery === "exp" ? 490 : 0;
-  const total = subtotal + deliveryFee;
-
   async function handlePlaceOrder() {
     const required = ["name", "phone", "email", "address", "city", "district", "postalCode"];
     const missing = required.filter(key => !form[key as keyof typeof form]);
     
     if (missing.length > 0) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
       return;
     }
 
@@ -93,14 +131,16 @@ function Checkout() {
       });
 
       toast.success("Order placed successfully!");
-      
       clear();
       navigate({ 
         to: "/order-success", 
         search: { orderNumber: result.orderNumber } 
       });
     } catch (e: any) {
-      toast.error("Order failed", { description: e.message });
+      console.error("Order error:", e);
+      toast.error("Order failed", { 
+        description: e.message || "An unexpected error occurred. Please try again." 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +154,6 @@ function Checkout() {
 
       <div className="mt-8 grid lg:grid-cols-[1fr_380px] gap-6">
         <div className="space-y-5">
-          {/* Shipping */}
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
             <div className="flex items-center gap-3 pb-4 border-b border-border">
               <div className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-bold">1</div>
@@ -153,7 +192,6 @@ function Checkout() {
             </div>
           </section>
 
-          {/* Payment */}
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
             <div className="flex items-center gap-3 pb-4 border-b border-border">
               <div className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-bold">2</div>
@@ -171,7 +209,7 @@ function Checkout() {
               <Link to="/cart" className="text-sm font-semibold text-primary inline-flex items-center gap-1">← Back to Cart</Link>
               <button 
                 onClick={handlePlaceOrder} 
-                disabled={isSubmitting}
+                disabled={isSubmitting || loadingProducts}
                 className="bg-primary text-primary-foreground rounded-xl px-6 py-3 text-sm font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isSubmitting && <Loader2 className="size-4 animate-spin" />}
@@ -181,7 +219,6 @@ function Checkout() {
           </section>
         </div>
 
-        {/* Summary */}
         <aside className="self-start space-y-5 lg:sticky lg:top-28">
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center justify-between">
@@ -195,8 +232,10 @@ function Checkout() {
                 <p className="text-sm text-muted-foreground">No items yet.</p>
               ) : (
                 items.map((i, idx) => {
-                  const p = dbProducts?.find(prod => prod.id === i.productId);
+                  const p = cartData?.products.find(prod => prod.id === i.productId);
                   if (!p) return null;
+                  const variant = i.variantId ? cartData?.variants[i.variantId] : null;
+                  const finalPrice = (p.discount_price || p.price) + (variant?.price_diff || 0);
                   return (
                     <div key={idx} className="flex gap-3">
                       <div className="size-14 rounded-lg bg-muted/40 shrink-0 overflow-hidden"><img src={p.image} alt={p.name} className="h-full w-full object-contain p-1" /></div>
@@ -204,7 +243,7 @@ function Checkout() {
                         <p className="text-sm font-semibold leading-tight line-clamp-2">{p.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {i.qty}</p>
                       </div>
-                      <p className="text-sm font-bold whitespace-nowrap">{formatLKR((p.discount_price || p.price) * i.qty)}</p>
+                      <p className="text-sm font-bold whitespace-nowrap">{formatLKR(finalPrice * i.qty)}</p>
                     </div>
                   );
                 })
