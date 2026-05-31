@@ -2,25 +2,27 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
-import { Tag, ShoppingBag, Timer } from "lucide-react";
+import { Tag, ShoppingBag, Timer, Ticket } from "lucide-react";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
+import { CouponCard } from "@/components/CouponCard";
 
 export const Route = createFileRoute("/deals")({
   head: () => ({
     meta: [
-      { title: "Hot Deals & Offers — byphone.lk" },
-      { name: "description", content: "Grab the best deals on latest smartphones and accessories. Limited time offers on top brands." },
+      { title: "Hot Deals & Coupons — byphone.lk" },
+      { name: "description", content: "Grab the best deals and active discount coupons on latest smartphones and accessories at byphone.lk." },
     ],
   }),
   component: DealsPage,
 });
 
 function DealsPage() {
+  const now = new Date().toISOString();
+
   // 1. Fetch Active Flash Sales
   const { data: flashSales, isLoading: loadingFlash } = useQuery({
     queryKey: ["deals-flash-sales"],
     queryFn: async () => {
-      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("flash_sales")
         .select(`
@@ -55,33 +57,19 @@ function DealsPage() {
     },
   });
 
-  // 2. Fetch General Discounted Products
-  const { data: generalDeals, isLoading: loadingGeneral } = useQuery({
-    queryKey: ["deals-general"],
+  // 2. Fetch Active Coupons
+  const { data: coupons, isLoading: loadingCoupons } = useQuery({
+    queryKey: ["deals-active-coupons"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("products")
-        .select(`
-          *,
-          brands(name),
-          categories!products_category_id_fkey(name),
-          product_images(url)
-        `)
-        .neq("discount_price", 0)
-        .not("discount_price", "is", null)
+        .from("coupons")
+        .select("*")
         .eq("status", "active")
-        .order("discount_price", { ascending: true });
+        .or(`end_date.is.null,end_date.gte.${now}`)
+        .order("created_at", { ascending: false });
       
       if (error) throw error;
-
-      return (data ?? []).map((p: any) => ({
-        ...p,
-        brand: p.brands?.name || "Unknown Brand",
-        category: p.categories?.name || "General",
-        image: p.product_images?.[0]?.url || "",
-        oldPrice: p.price,
-        price: p.discount_price,
-      }));
+      return data ?? [];
     },
   });
 
@@ -89,16 +77,16 @@ function DealsPage() {
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 bg-rose-100 text-rose-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-          <Tag className="size-3" /> Limited Time Offers
+          <Tag className="size-3" /> Save Big Today
         </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">Hot Deals</h1>
+        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">Tech Deals & Coupons</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Unbeatable prices on the latest tech. Grab your favorites before they're gone!
+          Explore limited-time flash sales and stackable discount codes for your favorite smartphones and gadgets.
         </p>
       </div>
 
       {/* FLASH DEALS SECTION */}
-      <section className="mb-16">
+      <section className="mb-20">
         <div className="flex items-center gap-2 mb-6">
           <div className="size-8 rounded-full bg-rose-500 text-white flex items-center justify-center animate-pulse">
             <Timer className="size-4" />
@@ -130,28 +118,30 @@ function DealsPage() {
         )}
       </section>
 
-      {/* GENERAL OFFERS SECTION */}
+      {/* COUPONS SECTION */}
       <section>
         <div className="flex items-center gap-2 mb-6">
-          <ShoppingBag className="size-6 text-primary" />
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">Special Offers</h2>
+          <div className="size-8 rounded-full bg-primary text-white flex items-center justify-center">
+            <Ticket className="size-4" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">Active Promo Codes</h2>
         </div>
         
-        {loadingGeneral ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
+        {loadingCoupons ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-48 rounded-3xl bg-muted animate-pulse" />
             ))}
           </div>
-        ) : generalDeals?.length === 0 ? (
-          <div className="py-20 text-center">
-            <ShoppingBag className="size-16 text-muted-foreground/30 mx-auto mb-4" />
-            <h3 className="text-xl font-bold">No other deals available right now</h3>
-            <p className="text-muted-foreground mt-2">Check back soon for new offers!</p>
+        ) : coupons?.length === 0 ? (
+          <div className="py-16 text-center bg-muted/30 rounded-3xl border border-dashed border-border">
+            <Ticket className="size-12 text-muted-foreground/20 mx-auto mb-4" />
+            <h3 className="font-bold text-lg">No active coupons</h3>
+            <p className="text-sm text-muted-foreground mt-1">Check back later for new promotional codes.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
-            {generalDeals?.map((p) => <ProductCard p={p} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {coupons?.map((c) => <CouponCard key={c.id} coupon={c as any} />)}
           </div>
         )}
       </section>
