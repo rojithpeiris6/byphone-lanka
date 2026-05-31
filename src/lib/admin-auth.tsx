@@ -6,6 +6,7 @@ type AdminUser = {
   id: string;
   email: string;
   created_at: string;
+  role: string | null;
 };
 
 type AdminAuthCtx = {
@@ -23,24 +24,39 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        // Fetch the role for this user
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
         setUser({
           id: session.user.id,
           email: session.user.email ?? "",
           created_at: session.user.created_at,
+          role: roleData?.role ?? null,
         });
       }
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
         setUser({
           id: session.user.id,
           email: session.user.email ?? "",
           created_at: session.user.created_at,
+          role: roleData?.role ?? null,
         });
       } else {
         setUser(null);

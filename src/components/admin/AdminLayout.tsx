@@ -1,6 +1,6 @@
 import { Link, Outlet, useRouterState, useNavigate, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { LayoutDashboard, Package, FolderTree, Tags, Boxes, ShoppingBag, Users, Ticket, Star, Zap, CreditCard, Truck, ChartBar as BarChart3, Megaphone, Bell, UserCog, Settings, ScrollText, Search, Menu, X, ChevronDown, LogOut, Loader as Loader2 } from "lucide-react";
+import { LayoutDashboard, Package, FolderTree, Tags, Boxes, ShoppingBag, Users, Ticket, Star, Zap, CreditCard, Truck, ChartBar as BarChart3, Megaphone, Bell, UserCog, Settings, ScrollText, Search, Menu, X, ChevronDown, LogOut, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/lib/admin-auth";
 
@@ -36,11 +36,12 @@ const NOTIFICATIONS = [
 export function AdminLayout() {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, signOut } = useAdminAuth();
+  const { user, loading, role, signOut } = useAdminAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
   const isLoginPage = path === "/admin/login";
+  const allowedRoles = ["admin", "manager", "staff"];
 
   // Redirect to login if not authenticated
   if (loading) {
@@ -53,6 +54,11 @@ export function AdminLayout() {
 
   if (!user && !isLoginPage) {
     return <Navigate to="/admin/login" />;
+  }
+
+  // If logged in but doesn't have required role, redirect to home
+  if (user && role && !allowedRoles.includes(role) && !isLoginPage) {
+    return <Navigate to="/" />;
   }
 
   if (isLoginPage) {
@@ -98,7 +104,7 @@ export function AdminLayout() {
           })}
         </nav>
         <div className="p-3 border-t border-border text-xs text-muted-foreground">
-          v1.0 · byphone.lk
+          {role?.toUpperCase()} · v1.0 · byphone.lk
         </div>
       </aside>
 
