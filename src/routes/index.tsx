@@ -71,21 +71,19 @@ function Home() {
         .select(`
           *,
           brands(name),
-          categories(name),
-          product_images(url)
+          categories(name)
         `)
         .eq("status", "active")
         .order("rating", { ascending: false })
-        .order("stock_quantity", { ascending: false })
+        .order("stock_quantity", { ascending: false }) // Prioritize in-stock items
         .limit(10);
       if (error) throw error;
-      
+
       // Map DB response to the Product type expected by ProductCard
       return (data ?? []).map((p: any) => ({
         ...p,
         brand: p.brands?.name || "Unknown Brand",
         category: p.categories?.name || "General",
-        image: p.product_images?.[0]?.url || "",
         oldPrice: p.discount_price ? p.price : undefined,
         price: p.discount_price || p.price,
       }));

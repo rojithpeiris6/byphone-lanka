@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { SlidersHorizontal, X } from "lucide-react";
-import { products, brands as allBrands } from "@/lib/shop";
+import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/shop")({
@@ -21,14 +22,55 @@ function ShopPage() {
   const [brand, setBrand] = useState<string | null>(null);
   const [sort, setSort] = useState("featured");
   const [open, setOpen] = useState(false);
+
+  // Fetch Products from DB
+  const { data: dbProducts, isLoading: loadingProducts } = useQuery({
+    queryKey: ["shop-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`
+          *,
+          brands(name),
+          categories(name),
+          product_images(url)
+        `)
+        .eq("status", "active");
+      if (error) throw error;
+      
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        brand: p.brands?.name || "Unknown Brand",
+        category: p.categories?.name || "General",
+        image: p.product_images?.[0]?.url || "",
+        oldPrice: p.discount_price ? p.price : undefined,
+        price: p.discount_price || p.price,
+      }));
+    },
+  });
+
+  // Fetch Brands from DB
+  const { data: dbBrands, isLoading: loadingBrands } = useQuery({
+    queryKey: ["shop-brands"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brands")
+        .select("name")
+        .eq("status", "active")
+        .order("name");
+      if (error) throw error;
+      return data?.map((b) => b.name) ?? [];
+    },
+  });
+
   const list = useMemo(() => {
-    let l = [...products];
+    let l = [...(dbProducts ?? [])];
     if (brand) l = l.filter((p) => p.brand === brand);
     if (sort === "price-asc") l.sort((a, b) => a.price - b.price);
     if (sort === "price-desc") l.sort((a, b) => b.price - a.price);
     if (sort === "rating") l.sort((a, b) => b.rating - a.rating);
     return l;
-  }, [brand, sort]);
+  }, [dbProducts, brand, sort]);
 
   const Filters = (
     <div className="space-y-6">
@@ -36,7 +78,7 @@ function ShopPage() {
         <h4 className="text-sm font-bold mb-3">Brand</h4>
         <div className="space-y-2">
           <button onClick={() => setBrand(null)} className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (!brand ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}>All Brands</button>
-          {allBrands.map((b) => (
+          {dbBrands?.map((b) => (
             <button key={b} onClick={() => setBrand(b)} className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (brand === b ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}>{b}</button>
           ))}
         </div>
@@ -66,9 +108,21 @@ function ShopPage() {
       </div>
 
       <div className="grid lg:grid-cols-[240px_1fr] gap-8">
-        <aside className="hidden lg:block">{Filters}</aside>
+        <aside className="hidden lg:block">
+          {loadingBrands ? <div className="text-sm text-muted-foreground">Loading filters...</div> : Filters}
+        </aside>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-          {list.map((p) => <ProductCard key={p.id} p={p} />)}
+          {loadingProducts ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
+            ))
+          ) : list.length === 0 ? (
+            <div className="col-span-full py-20 text-center">
+              <p className="text-muted-foreground">No products found matching your criteria.</p>
+            </div>
+          ) : (
+            list.map((p) => <ProductCard key={p.id} p={p} />)
+          )}
         </div>
       </div>
 
@@ -80,7 +134,7 @@ function ShopPage() {
               <h3 className="text-lg font-extrabold">Filters</h3>
               <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-muted"><X className="size-5" /></button>
             </div>
-            {Filters}
+            {loadingBrands ? <div className="text-sm text-muted-foreground">Loading filters...</div> : Filters}
           </div>
         </div>
       )}
