@@ -93,9 +93,9 @@ export function ProductForm({ productId, onClose, onSuccess }: ProductFormProps)
     if (!files?.length) return;
     for (const file of Array.from(files)) {
       const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error } = await supabase.storage.from("product-images").upload(path, file);
+      const { error } = await supabase.storage.from("shop").upload(path, file);
       if (error) { toast.error(error.message); continue; }
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
+      const { data: pub } = supabase.storage.from("shop").getPublicUrl(path);
       setImages((prev) => [...prev, { url: pub.publicUrl, sort_order: prev.length }]);
     }
     toast.success("Images uploaded");

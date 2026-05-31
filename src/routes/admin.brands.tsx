@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Search, Pencil, Trash2, Tags, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 export const Route = createFileRoute("/admin/brands")({
   component: BrandsPage,
@@ -152,9 +153,11 @@ function BrandModal({ brand, onClose, onSave }: { brand: Brand; onClose: () => v
           <button onClick={onClose} className="p-2 rounded hover:bg-accent"><X className="size-4" /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <ImageUpload label="Brand Logo" value={form.logo} onChange={(url) => set("logo", url)} />
+          </div>
           <div><label className={labelCls}>Name *</label><input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
           <div><label className={labelCls}>Slug *</label><input className={inputCls} value={form.slug} onChange={(e) => set("slug", e.target.value)} /></div>
-          <div className="col-span-2"><label className={labelCls}>Logo URL</label><input className={inputCls} value={form.logo ?? ""} onChange={(e) => set("logo", e.target.value)} /></div>
           <div className="col-span-2"><label className={labelCls}>Website</label><input className={inputCls} value={form.website ?? ""} onChange={(e) => set("website", e.target.value)} /></div>
           <div className="col-span-2">
             <label className={labelCls}>Description</label>

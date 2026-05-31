@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Search, Pencil, Trash2, FolderTree, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 export const Route = createFileRoute("/admin/categories")({
   component: CategoriesPage,
@@ -164,9 +165,11 @@ function CategoryModal({ category, allCategories, onClose, onSave }: { category:
           <button onClick={onClose} className="p-2 rounded hover:bg-accent"><X className="size-4" /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <ImageUpload label="Category Image" value={form.image} onChange={(url) => set("image", url)} />
+          </div>
           <div><label className={labelCls}>Name *</label><input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
           <div><label className={labelCls}>Slug *</label><input className={inputCls} value={form.slug} onChange={(e) => set("slug", e.target.value)} /></div>
-          <div className="col-span-2"><label className={labelCls}>Image URL</label><input className={inputCls} value={form.image ?? ""} onChange={(e) => set("image", e.target.value)} /></div>
           <div>
             <label className={labelCls}>Parent</label>
             <select className={inputCls} value={form.parent_id ?? ""} onChange={(e) => set("parent_id", e.target.value || null)}>
