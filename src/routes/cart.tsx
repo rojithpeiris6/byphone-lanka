@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCart, getProduct, formatLKR } from "@/lib/shop";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -39,29 +41,9 @@ function CartPage() {
 
       <div className="mt-6 grid lg:grid-cols-[1fr_380px] gap-8">
         <div className="space-y-3">
-          {items.map((i) => {
-            const p = getProduct(i.id)!;
-            return (
-              <div key={i.id} className="rounded-2xl border border-border bg-card p-4 flex gap-4">
-                <Link to="/product/$slug" params={{ slug: p.slug }} className="size-20 sm:size-28 rounded-xl bg-muted/40 shrink-0 overflow-hidden">
-                  <img src={p.image} alt={p.name} className="h-full w-full object-contain p-2" />
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] uppercase font-semibold text-muted-foreground">{p.brand}</p>
-                  <Link to="/product/$slug" params={{ slug: p.slug }} className="text-sm sm:text-base font-semibold leading-tight line-clamp-2 hover:text-primary">{p.name}</Link>
-                  <p className="mt-1 text-primary font-extrabold">{formatLKR(p.price)}</p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="inline-flex items-center border border-border rounded-xl">
-                      <button onClick={() => setQty(i.id, i.qty - 1)} className="p-1.5 hover:bg-muted rounded-l-xl"><Minus className="size-3.5" /></button>
-                      <span className="px-3 text-sm font-semibold w-8 text-center">{i.qty}</span>
-                      <button onClick={() => setQty(i.id, i.qty + 1)} className="p-1.5 hover:bg-muted rounded-r-xl"><Plus className="size-3.5" /></button>
-                    </div>
-                    <button onClick={() => remove(i.id)} className="text-muted-foreground hover:text-destructive p-2"><Trash2 className="size-4" /></button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {items.map((i) => (
+            <CartItemRow key={`${i.productId}-${i.variantId}`} item={i} setQty={setQty} remove={remove} />
+          ))}
         </div>
 
         <aside className="lg:sticky lg:top-28 self-start">
@@ -96,6 +78,45 @@ function CartPage() {
           <Link to="/checkout" className="flex-1 bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2">
             Checkout <ArrowRight className="size-4" />
           </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CartItemRow({ item, setQty, remove }: any) {
+  const p = getProduct(item.productId)!;
+  
+  const { data: variant } = useQuery({
+    queryKey: ["cart-variant", item.variantId],
+    queryFn: async () => {
+      if (!item.variantId) return null;
+      const { data } = await supabase.from("product_variants").select("*").eq("id", item.variantId).single();
+      return data;
+    },
+    enabled: !!item.variantId,
+  });
+
+  const finalPrice = p.price + (variant?.price_diff || 0);
+  const variantLabel = variant ? [variant.storage, variant.color, variant.ram, variant.network].filter(Boolean).join(" / ") : "";
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 flex gap-4">
+      <Link to="/product/$slug" params={{ slug: p.slug }} className="size-20 sm:size-28 rounded-xl bg-muted/40 shrink-0 overflow-hidden">
+        <img src={p.image} alt={p.name} className="h-full w-full object-contain p-2" />
+      </Link>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] uppercase font-semibold text-muted-foreground">{p.brand}</p>
+        <Link to="/product/$slug" params={{ slug: p.slug }} className="text-sm sm:text-base font-semibold leading-tight line-clamp-2 hover:text-primary">{p.name}</Link>
+        {variantLabel && <p className="text-[11px] text-muted-foreground mt-0.5">{variantLabel}</p>}
+        <p className="mt-1 text-primary font-extrabold">{formatLKR(finalPrice)}</p>
+        <div className="mt-3 flex items-center justify-between">
+          <div className="inline-flex items-center border border-border rounded-xl">
+            <button onClick={() => setQty(item.productId, item.variantId, item.qty - 1)} className="p-1.5 hover:bg-muted rounded-l-xl"><Minus className="size-3.5" /></button>
+            <span className="px-3 text-sm font-semibold w-8 text-center">{item.qty}</span>
+            <button onClick={() => setQty(item.productId, item.variantId, item.qty + 1)} className="p-1.5 hover:bg-muted rounded-r-xl"><Plus className="size-3.5" /></button>
+          </div>
+          <button onClick={() => remove(item.productId, item.variantId)} className="text-muted-foreground hover:text-destructive p-2"><Trash2 className="size-4" /></button>
         </div>
       </div>
     </div>

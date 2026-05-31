@@ -27,6 +27,7 @@ export type Product = {
   highlights?: string[];
   description?: string;
   specs?: Record<string, string>;
+  variants?: any[];
 };
 
 export const products: Product[] = [
@@ -151,7 +152,7 @@ export function formatLKR(n: number) {
 }
 
 /* ---------- Cart store ---------- */
-export type CartItem = { id: string; qty: number };
+export type CartItem = { productId: string; variantId?: string; qty: number };
 
 type CartState = {
   items: CartItem[];
@@ -159,9 +160,9 @@ type CartState = {
   open: () => void;
   close: () => void;
   setOpen: (v: boolean) => void;
-  add: (id: string, qty?: number) => void;
-  remove: (id: string) => void;
-  setQty: (id: string, qty: number) => void;
+  add: (productId: string, variantId?: string, qty?: number) => void;
+  remove: (productId: string, variantId?: string) => void;
+  setQty: (productId: string, variantId?: string, qty: number) => void;
   clear: () => void;
   count: () => number;
   subtotal: () => number;
@@ -173,24 +174,27 @@ export const useCart = create<CartState>((set, get) => ({
   open: () => set({ isOpen: true }),
   close: () => set({ isOpen: false }),
   setOpen: (v) => set({ isOpen: v }),
-  add: (id, qty = 1) =>
+  add: (productId, variantId, qty = 1) =>
     set((s) => {
-      const existing = s.items.find((i) => i.id === id);
+      const existing = s.items.find((i) => i.productId === productId && i.variantId === variantId);
       const items = existing
-        ? s.items.map((i) => (i.id === id ? { ...i, qty: i.qty + qty } : i))
-        : [...s.items, { id, qty }];
+        ? s.items.map((i) => (i.productId === productId && i.variantId === variantId ? { ...i, qty: i.qty + qty } : i))
+        : [...s.items, { productId, variantId, qty }];
       return { items, isOpen: true };
     }),
-  remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
-  setQty: (id, qty) =>
+  remove: (productId, variantId) => set((s) => ({ items: s.items.filter((i) => !(i.productId === productId && i.variantId === variantId)) })),
+  setQty: (productId, variantId, qty) =>
     set((s) => ({
-      items: qty <= 0 ? s.items.filter((i) => i.id !== id) : s.items.map((i) => (i.id === id ? { ...i, qty } : i)),
+      items: s.items.map((i) => (i.productId === productId && i.variantId === variantId ? { ...i, qty } : i)).filter(i => i.qty > 0),
     })),
   clear: () => set({ items: [] }),
   count: () => get().items.reduce((a, b) => a + b.qty, 0),
   subtotal: () =>
     get().items.reduce((a, b) => {
-      const p = getProduct(b.id);
-      return a + (p ? p.price * b.qty : 0);
+      const p = getProduct(b.productId);
+      if (!p) return a;
+      // If we had real DB products in getProduct, we would check variant price_diff here.
+      // For now, we use the base price. In the route we handle dynamic pricing.
+      return a + (p.price * b.qty);
     }, 0),
 }));

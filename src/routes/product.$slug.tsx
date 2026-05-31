@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2 } from "lucide-react";
 import { products, formatLKR, useCart, type Product } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
@@ -14,7 +14,8 @@ export const Route = createFileRoute("/product/$slug")({
         *,
         brands(name),
         categories!products_category_id_fkey(name),
-        product_images(url)
+        product_images(url),
+        product_variants(*)
       `)
       .eq("slug", params.slug)
       .single();
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/product/$slug")({
         price: product.discount_price || product.price,
         rating: 0,
         reviews: 0,
+        variants: product.product_variants || [],
       } as Product
     };
   },
@@ -54,17 +56,34 @@ function ProductPage() {
   const { product: p } = Route.useLoaderData() as { product: Product };
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
-  const [storage, setStorage] = useState(p.storage?.[1] ?? p.storage?.[0]);
-  const [color, setColor] = useState(p.colors?.[0]);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState<"specs" | "desc" | "reviews" | "warranty">("specs");
 
-  // Simplified related products fetch using mock data for now, or could be converted to DB
+  const selectedVariant = useMemo(() => 
+    p.variants?.find(v => v.id === selectedVariantId), 
+    [p.variants, selectedVariantId]
+  );
+
+  const currentPrice = useMemo(() => {
+    const basePrice = p.price;
+    const diff = selectedVariant?.price_diff || 0;
+    return basePrice + diff;
+  }, [p.price, selectedVariant]);
+
+  const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity <= 0 : false;
+
+  // Simplified related products fetch using mock data for now
   const related = products.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
 
   function handleAdd() {
-    add(p.id, qty);
-    toast.success("Added to cart", { description: `${qty} × ${p.name}` });
+    add(p.id, selectedVariantId, qty);
+    toast.success("Added to cart", { description: `${qty} × ${p.name}${selectedVariant ? ` (${selectedVariant.storage || selectedVariant.color || 'Variant'})` : ''}` });
   }
+
+  const variantLabel = (v: any) => {
+    const parts = [v.storage, v.color, v.ram, v.network].filter(Boolean);
+    return parts.join(" / ");
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-32 lg:pb-6">
@@ -100,35 +119,47 @@ function ProductPage() {
               <span className="text-primary font-semibold ml-1">({p.reviews} reviews)</span>
             </div>
             <span className="text-border">|</span>
-            <span className="text-[color:var(--color-success)] font-semibold">In Stock</span>
+            <span className={cn("font-semibold", isOutOfStock ? "text-destructive" : "text-[color:var(--color-success)]")}>
+              {isOutOfStock ? "Out of Stock" : "In Stock"}
+            </span>
           </div>
           <div className="mt-5">
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl sm:text-4xl font-extrabold text-primary">{formatLKR(p.price)}</span>
+              <span className="text-3xl sm:text-4xl font-extrabold text-primary">{formatLKR(currentPrice)}</span>
               {p.oldPrice && <span className="text-lg text-muted-foreground line-through">{formatLKR(p.oldPrice)}</span>}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              or 3 interest-free payments of {formatLKR(Math.round(p.price / 3))} with <span className="font-bold text-foreground">KOKO</span>
+              or 3 interest-free payments of {formatLKR(Math.round(currentPrice / 3))} with <span className="font-bold text-foreground">KOKO</span>
             </p>
           </div>
 
-          {p.storage && (
+          {p.variants && p.variants.length > 0 && (
             <div className="mt-6">
-              <p className="text-sm"><span className="font-semibold">Storage:</span> <span className="text-muted-foreground">{storage}</span></p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {p.storage.map((s) => (
-                  <button key={s} onClick={() => setStorage(s)} className={"px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-colors " + (storage === s ? "border-primary bg-primary-soft text-primary" : "border-border hover:border-foreground/30")}>{s}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {p.colors && (
-            <div className="mt-5">
-              <p className="text-sm"><span className="font-semibold">Color:</span> <span className="text-muted-foreground">{color?.name}</span></p>
-              <div className="mt-2 flex gap-3">
-                {p.colors.map((c) => (
-                  <button key={c.name} onClick={() => setColor(c)} aria-label={c.name} className={"size-9 rounded-full border-2 " + (color?.name === c.name ? "border-primary ring-2 ring-primary/30" : "border-border")} style={{ background: c.hex }} />
+              <p className="text-sm mb-3"><span className="font-semibold">Select Configuration:</span> <span className="text-muted-foreground">{selectedVariant ? variantLabel(selectedVariant) : "Please choose one"}</span></p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {p.variants.map((v) => (
+                  <button 
+                    key={v.id} 
+                    onClick={() => setSelectedVariantId(v.id)} 
+                    disabled={v.stock_quantity <= 0}
+                    className={cn(
+                      "flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left transition-all",
+                      selectedVariantId === v.id 
+                        ? "border-primary bg-primary-soft text-primary ring-2 ring-primary/20" 
+                        : "border-border hover:border-foreground/30",
+                      v.stock_quantity <= 0 && "opacity-50 cursor-not-allowed bg-muted"
+                    )}
+                  >
+                    <div>
+                      <p className="text-sm font-bold">{variantLabel(v)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {v.stock_quantity <= 0 ? "Out of stock" : `Stock: ${v.stock_quantity} units`}
+                      </p>
+                    </div>
+                    <div className="text-sm font-extrabold">
+                      {v.price_diff !== 0 ? `+${formatLKR(v.price_diff)}` : "Base Price"}
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -144,7 +175,11 @@ function ProductPage() {
           </div>
 
           <div className="hidden lg:flex mt-6 gap-3">
-            <button onClick={handleAdd} className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide hover:bg-primary-dark transition-colors">
+            <button 
+              onClick={handleAdd} 
+              disabled={isOutOfStock || (!p.variants?.length && isOutOfStock)}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <ShoppingCart className="size-5" /> ADD TO CART
             </button>
             <button className="size-14 grid place-items-center border-2 border-primary/30 text-primary rounded-2xl hover:bg-primary-soft"><Heart className="size-5" /></button>
@@ -218,13 +253,21 @@ function ProductPage() {
         <div className="flex items-center gap-3">
           <div>
             <p className="text-[10px] uppercase text-muted-foreground font-semibold">Price</p>
-            <p className="text-lg font-extrabold text-primary leading-tight">{formatLKR(p.price)}</p>
+            <p className="text-lg font-extrabold text-primary leading-tight">{formatLKR(currentPrice)}</p>
           </div>
-          <button onClick={handleAdd} className="flex-1 bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2">
+          <button 
+            onClick={handleAdd} 
+            disabled={isOutOfStock}
+            className="flex-1 bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50"
+          >
             <ShoppingCart className="size-4" /> ADD TO CART
           </button>
         </div>
       </div>
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }

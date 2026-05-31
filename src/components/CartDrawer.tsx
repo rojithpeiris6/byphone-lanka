@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, ShoppingBag, X, ShieldCheck, Truck } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCart, getProduct, formatLKR } from "@/lib/shop";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export function CartDrawer() {
   const isOpen = useCart((s) => s.isOpen);
@@ -79,57 +81,10 @@ export function CartDrawer() {
           <>
             <ul className="flex-1 overflow-y-auto divide-y divide-border">
               {items.map((it) => {
-                const p = getProduct(it.id);
+                const p = getProduct(it.productId);
                 if (!p) return null;
                 return (
-                  <li key={it.id} className="flex gap-3 p-4">
-                    <Link
-                      to="/product/$slug"
-                      params={{ slug: p.slug }}
-                      onClick={close}
-                      className="size-20 rounded-xl bg-muted/50 shrink-0 overflow-hidden grid place-items-center"
-                    >
-                      <img src={p.image} alt={p.name} className="h-full w-full object-contain p-1.5" />
-                    </Link>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{p.brand}</p>
-                      <Link
-                        to="/product/$slug"
-                        params={{ slug: p.slug }}
-                        onClick={close}
-                        className="block text-sm font-semibold leading-snug line-clamp-2 hover:text-primary"
-                      >
-                        {p.name}
-                      </Link>
-                      <div className="mt-2 flex items-center justify-between">
-                        <div className="inline-flex items-center rounded-full border border-border">
-                          <button
-                            onClick={() => setQty(p.id, it.qty - 1)}
-                            aria-label="Decrease"
-                            className="size-7 grid place-items-center text-muted-foreground hover:text-foreground"
-                          >
-                            <Minus className="size-3.5" />
-                          </button>
-                          <span className="w-7 text-center text-sm font-semibold">{it.qty}</span>
-                          <button
-                            onClick={() => setQty(p.id, it.qty + 1)}
-                            aria-label="Increase"
-                            className="size-7 grid place-items-center text-muted-foreground hover:text-foreground"
-                          >
-                            <Plus className="size-3.5" />
-                          </button>
-                        </div>
-                        <span className="text-sm font-extrabold text-primary">{formatLKR(p.price * it.qty)}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => remove(p.id)}
-                      aria-label="Remove"
-                      className="self-start size-8 grid place-items-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </li>
+                  <VariantItem key={`${it.productId}-${it.variantId}`} item={it} product={p} close={close} setQty={setQty} remove={remove} />
                 );
               })}
             </ul>
@@ -164,5 +119,74 @@ export function CartDrawer() {
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function VariantItem({ item, product, close, setQty, remove }: any) {
+  const { productId, variantId, qty } = item;
+  
+  const { data: variant } = useQuery({
+    queryKey: ["cart-variant", variantId],
+    queryFn: async () => {
+      if (!variantId) return null;
+      const { data } = await supabase.from("product_variants").select("*").eq("id", variantId).single();
+      return data;
+    },
+    enabled: !!variantId,
+  });
+
+  const finalPrice = product.price + (variant?.price_diff || 0);
+  const variantLabel = variant ? [variant.storage, variant.color, variant.ram, variant.network].filter(Boolean).join(" / ") : "";
+
+  return (
+    <li className="flex gap-3 p-4">
+      <Link
+        to="/product/$slug"
+        params={{ slug: product.slug }}
+        onClick={close}
+        className="size-20 rounded-xl bg-muted/50 shrink-0 overflow-hidden grid place-items-center"
+      >
+        <img src={product.image} alt={product.name} className="h-full w-full object-contain p-1.5" />
+      </Link>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{product.brand}</p>
+        <Link
+          to="/product/$slug"
+          params={{ slug: product.slug }}
+          onClick={close}
+          className="block text-sm font-semibold leading-snug line-clamp-2 hover:text-primary"
+        >
+          {product.name}
+        </Link>
+        {variantLabel && <p className="text-[11px] text-muted-foreground mb-1">{variantLabel}</p>}
+        <div className="mt-2 flex items-center justify-between">
+          <div className="inline-flex items-center rounded-full border border-border">
+            <button
+              onClick={() => setQty(productId, variantId, qty - 1)}
+              aria-label="Decrease"
+              className="size-7 grid place-items-center text-muted-foreground hover:text-foreground"
+            >
+              <Minus className="size-3.5" />
+            </button>
+            <span className="w-7 text-center text-sm font-semibold">{qty}</span>
+            <button
+              onClick={() => setQty(productId, variantId, qty + 1)}
+              aria-label="Increase"
+              className="size-7 grid place-items-center text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+          <span className="text-sm font-extrabold text-primary">{formatLKR(finalPrice * qty)}</span>
+        </div>
+      </div>
+      <button
+        onClick={() => remove(productId, variantId)}
+        aria-label="Remove"
+        className="self-start size-8 grid place-items-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+      >
+        <Trash2 className="size-4" />
+      </button>
+    </li>
   );
 }
