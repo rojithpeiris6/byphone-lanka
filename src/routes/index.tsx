@@ -62,7 +62,7 @@ function Home() {
     },
   });
 
-  // Fetch Popular Products (Sorted by Rating and Reviews)
+  // Fetch Popular Products
   const { data: dbPopular } = useQuery({
     queryKey: ["home-popular"],
     queryFn: async () => {
@@ -74,12 +74,11 @@ function Home() {
           categories!products_category_id_fkey(name)
         `)
         .eq("status", "active")
-        .order("rating", { ascending: false })
-        .order("stock_quantity", { ascending: false }) // Prioritize in-stock items
+        .order("created_at", { ascending: false })
+        .order("stock_quantity", { ascending: false })
         .limit(10);
       if (error) throw error;
 
-      // Map DB response to the Product type expected by ProductCard
       return (data ?? []).map((p: any) => ({
         ...p,
         brand: p.brands?.name || "Unknown Brand",
