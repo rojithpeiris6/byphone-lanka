@@ -51,10 +51,12 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
     if (authError) return { error: authError.message };
 
-    // 2. Create the corresponding customer record in the public.customers table
     if (data.user) {
-      const { error: dbError } = await supabase.from("customers").insert({
-        user_id: data.user.id,
+      const userId = data.user.id;
+
+      // 2. Create the corresponding customer record in the public.customers table
+      const { error: customerError } = await supabase.from("customers").insert({
+        user_id: userId,
         full_name: fullName,
         email: email,
         phone: phone,
@@ -62,9 +64,18 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         total_spent: 0,
       });
       
-      if (dbError) {
-        console.error("Error creating customer profile:", dbError.message);
-        // We don't necessarily fail the signup, but we log it
+      if (customerError) {
+        console.error("Error creating customer profile:", customerError.message);
+      }
+
+      // 3. Assign the 'customer' role in the public.user_roles table
+      const { error: roleError } = await supabase.from("user_roles").insert({
+        user_id: userId,
+        role: 'customer',
+      });
+
+      if (roleError) {
+        console.error("Error assigning customer role:", roleError.message);
       }
     }
 
