@@ -5,6 +5,7 @@ import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, Cr
 import hero from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
+import { FlashSaleTimer } from "@/components/FlashSaleTimer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -67,6 +68,23 @@ function CountdownTimer({ expiresAt }: { expiresAt: string }) {
 }
 
 function Home() {
+  const now = new Date().toISOString();
+
+  // Helper to get active flash sale product IDs
+  const { data: activeFlashSaleIds } = useQuery({
+    queryKey: ["home-active-flash-sale-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("flash_sales")
+        .select("product_id")
+        .eq("is_active", true)
+        .lte("start_at", now)
+        .gte("end_at", now);
+      if (error) throw error;
+      return data?.map(s => s.product_id) ?? [];
+    }
+  });
+
   // Fetch Parent Categories
   const { data: dbCategories } = useQuery({
     queryKey: ["home-categories"],
@@ -97,16 +115,21 @@ function Home() {
     },
   });
 
-  // Fetch Popular Products
+  // Fetch Popular Products - Exclude Flash Sale Items
   const { data: dbPopular } = useQuery({
-    queryKey: ["home-popular"],
+    queryKey: ["home-popular", activeFlashSaleIds],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const idsToExclude = activeFlashSaleIds || [];
+      let query = supabase
         .from("products")
         .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(10);
+        .eq("status", "active");
+      
+      if (idsToExclude.length > 0) {
+        query = query.not("id", "in", `(${idsToExclude.join(',')})`);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(10);
       if (error) throw error;
       return (data ?? []).map((p: any) => ({
         ...p,
@@ -123,7 +146,6 @@ function Home() {
   const { data: dbFlashSales } = useQuery({
     queryKey: ["home-flash-sales"],
     queryFn: async () => {
-      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("flash_sales")
         .select(`
@@ -158,16 +180,21 @@ function Home() {
     },
   });
 
-  // Fetch New Arrivals
+  // Fetch New Arrivals - Exclude Flash Sale Items
   const { data: dbNewArrivals } = useQuery({
-    queryKey: ["home-new-arrivals"],
+    queryKey: ["home-new-arrivals", activeFlashSaleIds],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const idsToExclude = activeFlashSaleIds || [];
+      let query = supabase
         .from("products")
         .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(8);
+        .eq("status", "active");
+
+      if (idsToExclude.length > 0) {
+        query = query.not("id", "in", `(${idsToExclude.join(',')})`);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(8);
       if (error) throw error;
       return (data ?? []).map((p: any) => ({
         ...p,

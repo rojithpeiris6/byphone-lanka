@@ -13,12 +13,20 @@ export function CartDrawer() {
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
   
+  const now = new Date().toISOString();
+
   const { data: dbProducts } = useQuery({
     queryKey: ["cart-drawer-products", items],
     queryFn: async () => {
       if (items.length === 0) return [];
       const ids = items.map(i => i.productId);
-      const { data } = await supabase.from("products").select(`*, product_images(url)`).in("id", ids);
+      const { data } = await supabase
+        .from("products")
+        .select(`*, product_images(url), flash_sales(sale_price)`)
+        .in("id", ids)
+        .eq("flash_sales.is_active", true)
+        .lte("flash_sales.start_at", now)
+        .gte("flash_sales.end_at", now);
       return (data ?? []).map(p => ({ ...p, image: p.product_images?.[0]?.url || "" }));
     },
   });
@@ -31,7 +39,7 @@ export function CartDrawer() {
       for (const item of items) {
         const product = dbProducts.find(p => p.id === item.productId);
         if (!product) continue;
-        let price = product.discount_price || product.price;
+        let price = product.flash_sales?.[0]?.sale_price || product.discount_price || product.price;
         if (item.variantId) {
           const { data: variant } = await supabase.from("product_variants").select("price_diff").eq("id", item.variantId).single();
           if (variant) price += variant.price_diff;
@@ -169,7 +177,8 @@ function VariantItem({ item, product, close, setQty, remove }: any) {
     enabled: !!variantId,
   });
 
-  const finalPrice = (product.discount_price || product.price) + (variant?.price_diff || 0);
+  const basePrice = product.flash_sales?.[0]?.sale_price || product.discount_price || product.price;
+  const finalPrice = basePrice + (variant?.price_diff || 0);
   const variantLabel = variant ? [variant.storage, variant.color, variant.ram, variant.network].filter(Boolean).join(" / ") : "";
 
   return (

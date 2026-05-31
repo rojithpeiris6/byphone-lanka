@@ -78,7 +78,7 @@ function Checkout() {
     }
   }, [profile]);
 
-  // 1. Fetch real-time product and variant data from DB
+  // 1. Fetch real-time product and variant data from DB, including active flash sales
   const { data: cartData, isLoading: loadingProducts } = useQuery({
     queryKey: ["checkout-data", items],
     queryFn: async () => {
@@ -86,12 +86,16 @@ function Checkout() {
       
       const productIds = items.map(i => i.productId);
       const variantIds = items.filter(i => i.variantId).map(i => i.variantId!).filter(Boolean);
+      const now = new Date().toISOString();
 
-      // Fetch products
+      // Fetch products joined with active flash sales
       const { data: dbProducts, error: pError } = await supabase
         .from("products")
-        .select(`*, product_images(url)`)
-        .in("id", productIds);
+        .select(`*, product_images(url), flash_sales(sale_price)`)
+        .in("id", productIds)
+        .eq("flash_sales.is_active", true)
+        .lte("flash_sales.start_at", now)
+        .gte("flash_sales.end_at", now);
       if (pError) throw pError;
 
       // Fetch variants
@@ -115,7 +119,7 @@ function Checkout() {
     },
   });
 
-  // 2. Calculate subtotal based on ACTUAL DB prices
+  // 2. Calculate subtotal based on ACTUAL DB prices and active flash sales
   const subtotal = useMemo(() => {
     if (!cartData?.products) return 0;
     
@@ -123,7 +127,8 @@ function Checkout() {
       const product = cartData.products.find(p => p.id === item.productId);
       if (!product) return acc;
 
-      let price = product.discount_price || product.price;
+      // Priority: Flash Sale Price > Discount Price > Regular Price
+      let price = product.flash_sales?.[0]?.sale_price || product.discount_price || product.price;
       if (item.variantId && cartData.variants[item.variantId]) {
         price += cartData.variants[item.variantId].price_diff;
       }
@@ -296,7 +301,11 @@ function Checkout() {
                   const p = cartData?.products.find(prod => prod.id === i.productId);
                   if (!p) return null;
                   const variant = i.variantId ? cartData?.variants[i.variantId] : null;
-                  const finalPrice = (p.discount_price || p.price) + (variant?.price_diff || 0);
+                  
+                  // Use Flash Sale price if available
+                  const basePrice = p.flash_sales?.[0]?.sale_price || p.discount_price || p.price;
+                  const finalPrice = basePrice + (variant?.price_diff || 0);
+
                   return (
                     <div key={idx} className="flex gap-3">
                       <div className="size-14 rounded-lg bg-muted/40 shrink-0 overflow-hidden"><img src={p.image} alt={p.name} className="h-full w-full object-contain p-1" /></div>

@@ -35,10 +35,26 @@ function ShopPage() {
   const { brand, category, minPrice, maxPrice, page, sort } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
+  const now = new Date().toISOString();
+
+  // Fetch active flash sale IDs first to exclude them
+  const { data: activeFlashSaleIds } = useQuery({
+    queryKey: ["shop-active-flash-sale-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("flash_sales")
+        .select("product_id")
+        .eq("is_active", true)
+        .lte("start_at", now)
+        .gte("end_at", now);
+      if (error) throw error;
+      return data?.map(s => s.product_id) ?? [];
+    }
+  });
 
   // Fetch Products from DB with pagination, sorting and advanced filters
   const { data: dbData, isLoading: loadingProducts, error: fetchError } = useQuery({
-    queryKey: ["shop-products", page, brand, category, minPrice, maxPrice, sort],
+    queryKey: ["shop-products", page, brand, category, minPrice, maxPrice, sort, activeFlashSaleIds],
     queryFn: async () => {
       const sortMap: Record<string, { column: string; ascending: boolean }> = {
         "price-asc": { column: "price", ascending: true },
@@ -56,8 +72,14 @@ function ShopPage() {
           categories!products_category_id_fkey(name),
           product_images(url)
         `, { count: 'exact' })
-        .eq("status", "active")
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+        .eq("status", "active");
+
+      // EXCLUDE active flash sale items
+      if (activeFlashSaleIds && activeFlashSaleIds.length > 0) {
+        query = query.not("id", "in", `(${activeFlashSaleIds.join(',')})`);
+      }
+
+      query = query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
         .order(activeSort.column, { ascending: activeSort.ascending });
 
       if (brand) {

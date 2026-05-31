@@ -26,10 +26,11 @@ export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator(orderSchema)
   .handler(async ({ data }) => {
     const { customer, shippingMethod, paymentMethod, items } = data;
+    const now = new Date().toISOString();
 
     // Get the currently authenticated user if available
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id || null;
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id || null;
 
     // 1. Calculate totals, validate stock and fetch current prices
     let subtotal = 0;
@@ -37,21 +38,28 @@ export const placeOrder = createServerFn({ method: "POST" })
     const stockUpdates = [];
 
     for (const item of items) {
-      // Fetch product with current stock
+      // Fetch product and active flash sale if exists
       const { data: product, error: pError } = await supabaseAdmin
         .from("products")
-        .select("id, price, name, sku, stock_quantity")
+        .select(`
+          id, price, name, sku, stock_quantity,
+          flash_sales(sale_price)
+        `)
         .eq("id", item.productId)
+        .eq("flash_sales.is_active", true)
+        .lte("flash_sales.start_at", now)
+        .gte("flash_sales.end_at", now)
         .single();
 
       if (pError || !product) throw new Error(`Product ${item.productId} not found`);
 
-      // Basic stock check (for products without variants)
+      // Basic stock check
       if (product.stock_quantity < item.qty) {
         throw new Error(`Insufficient stock for ${product.name}. Only ${product.stock_quantity} left.`);
       }
 
-      let unitPrice = product.price;
+      // Determine the correct price (Priority: Flash Sale > Regular Price)
+      let unitPrice = product.flash_sales?.[0]?.sale_price || product.price;
 
       // Fetch variant price difference if applicable
       if (item.variantId) {
@@ -92,7 +100,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const total = subtotal + shippingFee;
     const orderNumber = `BP-${Math.floor(10000 + Math.random() * 90000)}-${Date.now().toString().slice(-4)}`;
 
-    // 2. Create the Order record (including user_id for authenticated users)
+    // 2. Create the Order record
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
       .insert({
