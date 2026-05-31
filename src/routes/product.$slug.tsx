@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -61,7 +62,7 @@ function ProductPage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState<"specs" | "desc" | "reviews" | "warranty">("specs");
 
-  const { data: { user } } = supabase.auth.getUser();
+  const { user } = useAuth();
 
   const { data: wishlist } = useQuery({
     queryKey: ["wishlist", user?.id, p.id],
