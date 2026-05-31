@@ -213,7 +213,9 @@ function ProductPage() {
 
           {hasVariants && (
             <div className="mt-6">
-              <p className="text-sm mb-3"><span className="font-semibold">Select Configuration:</span> <span className="text-muted-foreground">{selectedVariant ? variantLabel(selectedVariant) : "Please choose one"}</span></p>
+              <p className="text-sm mb-3">
+                <span className="text-muted-foreground font-semibold">{selectedVariant ? variantLabel(selectedVariant) : "Please choose one"}</span>
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {p.variants.map((v: any) => (
                   <button 
