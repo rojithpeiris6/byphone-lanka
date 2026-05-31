@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2, Timer, MessageSquare, Send, Loader2 } from "lucide-react";
+import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2, Timer, MessageSquare, Send, Loader2, X } from "lucide-react";
 import { products, formatLKR, useCart, type Product } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
@@ -86,23 +86,7 @@ function ProductPage() {
   }, [p.product_images, p.image]);
 
   const [activeImage, setActiveImage] = useState(allImages[0] || p.image);
-
-  // Zoom styles
-  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    setZoomStyle({
-      transformOrigin: `${x}% ${y}%`,
-      transform: "scale(2.2)",
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setZoomStyle({});
-  };
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // Review states
   const [reviewRating, setReviewRating] = useState(5);
@@ -325,21 +309,19 @@ function ProductPage() {
           </div>
           
           <div 
-            className="relative flex-1 aspect-square rounded-2xl bg-muted/40 grid place-items-center overflow-hidden cursor-zoom-in"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
+            className="relative flex-1 aspect-square rounded-2xl bg-muted/40 grid place-items-center overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+            onClick={() => setIsLightboxOpen(true)}
           >
             <img 
               src={activeImage} 
               alt={p.name} 
               width={800} 
               height={800} 
-              style={zoomStyle}
-              className="h-full w-full object-contain p-6 transition-transform duration-75 ease-out" 
+              className="h-full w-full object-contain p-6" 
             />
-            <button className="absolute top-4 right-4 size-9 grid place-items-center rounded-full bg-background border border-border pointer-events-none shadow-sm">
+            <div className="absolute top-4 right-4 size-9 grid place-items-center rounded-full bg-background/80 border border-border pointer-events-none shadow-sm backdrop-blur-sm">
               <Maximize2 className="size-4" />
-            </button>
+            </div>
           </div>
         </div>
 
@@ -596,6 +578,28 @@ function ProductPage() {
             {related.map((r) => <ProductCard key={r.id} p={r} />)}
           </div>
         </section>
+      )}
+
+      {/* Lightbox / Full Screen Modal */}
+      {isLightboxOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <button 
+            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-all cursor-pointer"
+            onClick={() => setIsLightboxOpen(false)}
+            aria-label="Close full screen"
+          >
+            <X className="size-6" />
+          </button>
+          <img 
+            src={activeImage} 
+            alt={p.name} 
+            className="max-h-[90vh] max-w-full object-contain rounded-lg animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
       )}
 
       {/* Mobile sticky purchase */}
