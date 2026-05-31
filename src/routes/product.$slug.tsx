@@ -209,9 +209,6 @@ function ProductPage() {
               <span className="text-3xl sm:text-4xl font-extrabold text-primary">{formatLKR(currentPrice)}</span>
               {currentOldPrice && <span className="text-lg text-muted-foreground line-through">{formatLKR(currentOldPrice)}</span>}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              or 3 interest-free payments of {formatLKR(Math.round(currentPrice / 3))} with <span className="font-bold text-foreground">KOKO</span>
-            </p>
           </div>
 
           {hasVariants && (
