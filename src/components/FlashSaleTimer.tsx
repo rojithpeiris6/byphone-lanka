@@ -21,11 +21,13 @@ export function FlashSaleTimer({ expiresAt }: FlashSaleTimerProps) {
         return;
       }
 
-      const hours = Math.floor((distance / (1000 * 60 * 60)));
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      const daysPart = days > 0 ? `${days}d ` : "";
+      setTimeLeft(`${daysPart}${hours}h ${minutes}m ${seconds}s`);
     }, 1000);
 
     return () => clearInterval(timer);
