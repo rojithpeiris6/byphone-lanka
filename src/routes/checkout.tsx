@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, ChevronRight, Check, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2 } from "lucide-react";
-import { useCart, getProduct, formatLKR } from "@/lib/shop";
+import { useCart, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
 import { placeOrder } from "@/lib/api/orders.functions";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -26,6 +28,24 @@ function Checkout() {
   const [payment, setPayment] = useState("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch products in cart from DB for the summary
+  const { data: dbProducts, isLoading: loadingProducts } = useQuery({
+    queryKey: ["checkout-products", items],
+    queryFn: async () => {
+      if (items.length === 0) return [];
+      const ids = items.map(i => i.productId);
+      const { data, error } = await supabase
+        .from("products")
+        .select(`*, product_images(url)`)
+        .in("id", ids);
+      if (error) throw error;
+      return (data ?? []).map(p => ({
+        ...p,
+        image: p.product_images?.[0]?.url || "",
+      }));
+    },
+  });
+
   // Form state
   const [form, setForm] = useState({
     name: "",
@@ -41,7 +61,6 @@ function Checkout() {
   const total = subtotal + deliveryFee;
 
   async function handlePlaceOrder() {
-    // Simple client-side validation
     const required = ["name", "phone", "email", "address", "city", "district", "postalCode"];
     const missing = required.filter(key => !form[key as keyof typeof form]);
     
@@ -169,20 +188,26 @@ function Checkout() {
               <span className="text-xs bg-primary-soft text-primary font-bold px-2 py-1 rounded-full">{items.length} items</span>
             </div>
             <div className="mt-4 space-y-3 max-h-72 overflow-y-auto pr-1">
-              {items.length === 0 && <p className="text-sm text-muted-foreground">No items yet.</p>}
-              {items.map((i) => {
-                const p = getProduct(i.productId)!;
-                return (
-                  <div key={i.id} className="flex gap-3">
-                    <div className="size-14 rounded-lg bg-muted/40 shrink-0 overflow-hidden"><img src={p.image} alt={p.name} className="h-full w-full object-contain p-1" /></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold leading-tight line-clamp-2">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {i.qty}</p>
+              {loadingProducts ? (
+                <div className="py-4 text-center text-xs text-muted-foreground">Loading items...</div>
+              ) : items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No items yet.</p>
+              ) : (
+                items.map((i, idx) => {
+                  const p = dbProducts?.find(prod => prod.id === i.productId);
+                  if (!p) return null;
+                  return (
+                    <div key={idx} className="flex gap-3">
+                      <div className="size-14 rounded-lg bg-muted/40 shrink-0 overflow-hidden"><img src={p.image} alt={p.name} className="h-full w-full object-contain p-1" /></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold leading-tight line-clamp-2">{p.name}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {i.qty}</p>
+                      </div>
+                      <p className="text-sm font-bold whitespace-nowrap">{formatLKR((p.discount_price || p.price) * i.qty)}</p>
                     </div>
-                    <p className="text-sm font-bold whitespace-nowrap">{formatLKR(p.price * i.qty)}</p>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
             <div className="mt-4 pt-4 border-t border-border space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatLKR(subtotal)}</span></div>
