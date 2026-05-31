@@ -62,9 +62,9 @@ function Home() {
     },
   });
 
-  // Fetch Featured Products
-  const { data: dbFeatured } = useQuery({
-    queryKey: ["home-featured"],
+  // Fetch Popular Products (Sorted by Rating and Reviews)
+  const { data: dbPopular } = useQuery({
+    queryKey: ["home-popular"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -73,8 +73,9 @@ function Home() {
           brands(name),
           categories(name)
         `)
-        .eq("featured", true)
         .eq("status", "active")
+        .order("rating", { ascending: false })
+        .order("stock_quantity", { ascending: false }) // Prioritize in-stock items
         .limit(10);
       if (error) throw error;
       
@@ -164,7 +165,7 @@ function Home() {
           <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-          {dbFeatured?.map((p) => <ProductCard key={p.id} p={p} />)}
+          {dbPopular?.map((p) => <ProductCard key={p.id} p={p} />)}
         </div>
       </section>
 
