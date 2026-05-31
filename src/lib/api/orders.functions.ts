@@ -48,7 +48,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         .eq("id", item.productId)
         .eq("flash_sales.is_active", true)
         .lte("flash_sales.start_at", now)
-        .gte("flash_sales.end_at", now)
+        .gte("end_at", now)
         .single();
 
       if (pError || !product) throw new Error(`Product ${item.productId} not found`);
@@ -100,12 +100,57 @@ export const placeOrder = createServerFn({ method: "POST" })
     const total = subtotal + shippingFee;
     const orderNumber = `BP-${Math.floor(10000 + Math.random() * 90000)}-${Date.now().toString().slice(-4)}`;
 
+    // Find or create customer
+    let customerId: string | null = null;
+    const { data: existingCustomer } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("email", customer.email)
+      .maybeSingle();
+
+    if (existingCustomer) {
+      customerId = existingCustomer.id;
+      // Update customer details if logged in
+      if (userId) {
+        await supabaseAdmin
+          .from("customers")
+          .update({ 
+            user_id: userId,
+            full_name: customer.name,
+            phone: customer.phone || null,
+            address: customer.address || null,
+            city: customer.city || null,
+            district: customer.district || null,
+          })
+          .eq("id", customerId);
+      }
+    } else {
+      const { data: newCust, error: newCustErr } = await supabaseAdmin
+        .from("customers")
+        .insert({
+          user_id: userId,
+          full_name: customer.name,
+          email: customer.email,
+          phone: customer.phone || null,
+          address: customer.address || null,
+          city: customer.city || null,
+          district: customer.district || null,
+          postal_code: customer.postalCode || null,
+        })
+        .select("id")
+        .single();
+      
+      if (!newCustErr && newCust) {
+        customerId = newCust.id;
+      }
+    }
+
     // 2. Create the Order record
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
       .insert({
         order_number: orderNumber,
-        user_id: userId,
+        customer_id: customerId,
         customer_name: customer.name,
         customer_email: customer.email,
         customer_phone: customer.phone,

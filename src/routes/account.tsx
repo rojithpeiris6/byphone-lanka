@@ -324,16 +324,30 @@ function InfoGroup({ label, children }: any) {
 }
 
 function OrdersView({ userId, userEmail }: { userId: string; userEmail: string }) {
+  const { data: profile } = useQuery({
+    queryKey: ["customer-profile-orders", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["customer-orders", userId],
+    queryKey: ["customer-orders", userId, profile?.id],
     queryFn: async () => {
       let query = (supabase as any)
         .from("orders")
         .select("*")
         .order("created_at", { ascending: false });
       
-      if (userId) {
-        query = query.or(`user_id.eq.${userId},customer_email.eq.${userEmail}`);
+      if (profile?.id) {
+        query = query.or(`customer_id.eq.${profile.id},customer_email.eq.${userEmail}`);
       } else {
         query = query.eq("customer_email", userEmail);
       }
@@ -342,6 +356,7 @@ function OrdersView({ userId, userEmail }: { userId: string; userEmail: string }
       if (error) throw error;
       return (data as any[]) ?? [];
     },
+    enabled: !!profile || !userId,
   });
 
   if (isLoading) return <div className="p-12 text-center text-muted-foreground">Loading orders...</div>;
