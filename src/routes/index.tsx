@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle } from "lucide-react";
 import hero from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
@@ -34,7 +34,7 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
 }
 
 function Home() {
-  // Fetch first 6 Parent Categories only
+  // Fetch Parent Categories
   const { data: dbCategories } = useQuery({
     queryKey: ["home-categories"],
     queryFn: async () => {
@@ -42,25 +42,25 @@ function Home() {
         .from("categories")
         .select("name, image, slug")
         .eq("status", "active")
-        .is("parent_id", null) // Only fetch parent categories
+        .is("parent_id", null)
         .order("sort_order")
-        .limit(6); // Limit to first 6
+        .limit(6);
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  // Fetch Brands
+  // Fetch Brands with Logos
   const { data: dbBrands } = useQuery({
-    queryKey: ["home-brands"],
+    queryKey: ["home-brands-visual"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("brands")
-        .select("name")
+        .select("name, logo, slug")
         .eq("status", "active")
         .order("name");
       if (error) throw error;
-      return data?.map((b) => b.name) ?? [];
+      return data ?? [];
     },
   });
 
@@ -70,18 +70,56 @@ function Home() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select(`
-          *,
-          brands(name),
-          categories!products_category_id_fkey(name),
-          product_images(url)
-        `)
+        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .order("stock_quantity", { ascending: false })
         .limit(10);
       if (error) throw error;
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        brand: p.brands?.name || "Unknown Brand",
+        category: p.categories?.name || "General",
+        image: p.product_images?.[0]?.url || "",
+        oldPrice: p.discount_price ? p.price : undefined,
+        price: p.discount_price || p.price,
+      }));
+    },
+  });
 
+  // Fetch Flash Sales (Discounted products)
+  const { data: dbFlashSales } = useQuery({
+    queryKey: ["home-flash-sales"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
+        .eq("status", "active")
+        .not("discount_price", "is", null)
+        .gt("discount_price", 0)
+        .limit(8);
+      if (error) throw error;
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        brand: p.brands?.name || "Unknown Brand",
+        category: p.categories?.name || "General",
+        image: p.product_images?.[0]?.url || "",
+        oldPrice: p.price,
+        price: p.discount_price,
+      }));
+    },
+  });
+
+  // Fetch New Arrivals
+  const { data: dbNewArrivals } = useQuery({
+    queryKey: ["home-new-arrivals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (error) throw error;
       return (data ?? []).map((p: any) => ({
         ...p,
         brand: p.brands?.name || "Unknown Brand",
@@ -161,6 +199,24 @@ function Home() {
         </div>
       </section>
 
+      {/* FLASH SALES */}
+      {dbFlashSales && dbFlashSales.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 mt-14">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="size-8 rounded-full bg-rose-500 text-white flex items-center justify-center animate-pulse">
+                <Timer className="size-4" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">FLASH DEALS</h2>
+            </div>
+            <Link to="/deals" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">View All Deals <ChevronRight className="size-4" /></Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+            {dbFlashSales.map((p) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        </section>
+      )}
+
       {/* POPULAR PHONES */}
       <section className="mx-auto max-w-7xl px-4 mt-14">
         <div className="flex items-end justify-between mb-5">
@@ -171,6 +227,19 @@ function Home() {
           {dbPopular?.map((p) => <ProductCard key={p.id} p={p} />)}
         </div>
       </section>
+
+      {/* NEW ARRIVALS */}
+      {dbNewArrivals && dbNewArrivals.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 mt-14">
+          <div className="flex items-end justify-between mb-5">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">NEW ARRIVALS</h2>
+            <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">Browse All <ChevronRight className="size-4" /></Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+            {dbNewArrivals.map((p) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        </section>
+      )}
 
       {/* PROMO BANNERS */}
       <section className="mx-auto max-w-7xl px-4 mt-14 grid md:grid-cols-2 gap-5">
@@ -192,17 +261,77 @@ function Home() {
         </div>
       </section>
 
-      {/* BRANDS */}
+      {/* BRANDS VISUAL */}
       <section className="mx-auto max-w-7xl px-4 mt-14">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center">SHOP BY BRAND</h2>
           <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
           {dbBrands?.map((b) => (
-            <Link to="/shop" search={{ brand: b }} key={b} className="aspect-[2/1] rounded-xl border border-border bg-card grid place-items-center text-sm font-bold text-foreground/70 hover:text-primary hover:border-primary transition-colors">
-              {b}
+            <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group aspect-square rounded-2xl border border-border bg-card grid place-items-center p-4 transition-all hover:border-primary hover:shadow-sm">
+              <div className="size-12 rounded-full bg-muted overflow-hidden grid place-items-center p-2 group-hover:scale-110 transition-transform">
+                {b.logo ? (
+                  <img src={b.logo} alt={b.name} className="size-full object-contain" />
+                ) : (
+                  <span className="text-[10px] font-bold text-muted-foreground">{b.name}</span>
+                )}
+              </div>
             </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* NEWSLETTER */}
+      <section className="mx-auto max-w-7xl px-4 mt-14">
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-8 sm:p-12 text-center text-white">
+          <div className="relative z-10 max-w-2xl mx-auto space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold border border-primary/30">
+              <Mail className="size-3" /> JOIN THE CLUB
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Get the latest tech updates</h2>
+            <p className="text-slate-400 text-sm sm:text-base">Subscribe to our newsletter for exclusive deals, new arrivals, and tech tips delivered straight to your inbox.</p>
+            <form className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input 
+                type="email" 
+                placeholder="Enter your email" 
+                required
+                className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all" 
+              />
+              <button className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
+                Subscribe
+              </button>
+            </form>
+            <p className="text-[10px] text-slate-500">We respect your privacy. Unsubscribe at any time.</p>
+          </div>
+          <div className="absolute -top-24 -left-24 size-64 bg-primary/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-24 -right-24 size-64 bg-blue-500/10 rounded-full blur-3xl" />
+        </div>
+      </section>
+
+      {/* FAQ SECTION */}
+      <section className="mx-auto max-w-3xl px-4 mt-14 mb-14">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-bold uppercase tracking-widest mb-4">
+            <HelpCircle className="size-3" /> Help Center
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Frequently Asked Questions</h2>
+        </div>
+        <div className="space-y-4">
+          {[
+            { q: "Do you provide official warranties?", a: "Yes, all our products come with a 1-year official manufacturer warranty. We are authorized partners for the brands we carry." },
+            { q: "How long does delivery take?", a: "Standard delivery takes 2-3 working days islandwide. Express delivery can be delivered within 1 working day for an additional fee." },
+            { q: "What is your return policy?", a: "We offer a 7-day return policy for unused products in their original packaging with the original receipt." },
+            { q: "Do you accept installment payments?", a: "Yes, we support KOKO and MintPay for flexible 3-month interest-free installments on eligible products." },
+          ].map((faq, i) => (
+            <div key={i} className="p-5 rounded-2xl border border-border bg-card hover:border-primary/30 transition-colors">
+              <h3 className="font-bold text-sm sm:text-base mb-2 flex items-start gap-2">
+                <span className="text-primary">Q.</span> {faq.q}
+              </h3>
+              <p className="text-sm text-muted-foreground pl-5 leading-relaxed">
+                <span className="font-semibold text-foreground">A.</span> {faq.a}
+              </p>
+            </div>
           ))}
         </div>
       </section>
