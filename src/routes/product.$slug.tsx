@@ -122,6 +122,12 @@ function ProductPage() {
     return basePrice + diff;
   }, [p.price, selectedVariant]);
 
+  const currentOldPrice = useMemo(() => {
+    if (!p.oldPrice) return undefined;
+    const diff = selectedVariant?.price_diff || 0;
+    return p.oldPrice + diff;
+  }, [p.oldPrice, selectedVariant]);
+
   const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity <= 0 : false;
   const hasVariants = p.variants && p.variants.length > 0;
   const isAddDisabled = isOutOfStock || (hasVariants && !selectedVariantId);
@@ -201,7 +207,7 @@ function ProductPage() {
           <div className="mt-5">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl sm:text-4xl font-extrabold text-primary">{formatLKR(currentPrice)}</span>
-              {p.oldPrice && <span className="text-lg text-muted-foreground line-through">{formatLKR(p.oldPrice)}</span>}
+              {currentOldPrice && <span className="text-lg text-muted-foreground line-through">{formatLKR(currentOldPrice)}</span>}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               or 3 interest-free payments of {formatLKR(Math.round(currentPrice / 3))} with <span className="font-bold text-foreground">KOKO</span>
