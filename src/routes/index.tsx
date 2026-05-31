@@ -1,14 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle } from "lucide-react";
-import useEmblaCarousel from 'embla-carousel-react';
-import Autoplay from 'embla-carousel-autoplay';
 import heroDefault from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,9 +35,27 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
   );
 }
 
-function HeroSlide({ slide }: { slide: any }) {
+function Home() {
+  const now = new Date().toISOString();
+
+  // Fetch Homepage Settings
+  const { data: heroSettings } = useQuery({
+    queryKey: ["home-hero-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_hero").single();
+      return data?.value as any;
+    }
+  });
+
+  const heroContent = {
+    title: heroSettings?.title || "Latest Phones. Best Prices.",
+    description: heroSettings?.description || "Discover the newest smartphones from top brands at unbeatable prices. 100% original with official warranty.",
+    image: heroSettings?.image || heroDefault
+  };
+
+  // Logic to split title at first dot and color the rest blue
   const renderTitle = () => {
-    const title = slide.title || "Latest Phones. Best Prices.";
+    const title = heroContent.title;
     const dotIndex = title.indexOf('.');
     if (dotIndex === -1) return title;
 
@@ -55,92 +70,18 @@ function HeroSlide({ slide }: { slide: any }) {
     );
   };
 
-  return (
-    <div className="flex-[0_0_100%] min-w-0 relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-soft via-primary-soft to-blue-100/60">
-      <div className="grid lg:grid-cols-2 items-center">
-        <div className="px-6 sm:px-10 py-10 sm:py-16 lg:py-20">
-          <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-full px-3 py-1 text-[11px] font-bold tracking-wide">
-            <Sparkles className="size-3" /> NEW ARRIVAL
-          </span>
-          <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
-            {renderTitle()}
-          </h1>
-          <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
-            {slide.description || "Discover the newest smartphones from top brands at unbeatable prices."}
-          </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link to={slide.link || "/shop"} className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-bold hover:bg-primary-dark transition-colors shadow-[var(--shadow-soft)]">
-              SHOP NOW <ArrowRight className="size-4" />
-            </Link>
-            <Link to="/shop" className="inline-flex items-center gap-2 bg-background text-foreground rounded-full px-6 py-3 text-sm font-bold border border-border hover:border-primary hover:text-primary transition-colors">
-              View Deals
-            </Link>
-          </div>
-        </div>
-        <div className="relative h-64 sm:h-80 lg:h-[520px]">
-          <img src={slide.image || heroDefault} alt={slide.title || "Hero Banner"} className="absolute inset-0 h-full w-full object-cover object-center" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Home() {
-  const now = new Date().toISOString();
-
-  // Fetch Homepage Settings
-  const { data: heroSettings } = useQuery({
-    queryKey: ["home-hero-settings"],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase.from("settings").select("value").eq("key", "homepage_hero").maybeSingle();
-        if (error) throw error;
-        const val = data?.value;
-        return (Array.isArray(val) ? val : val ? [val] : []) as any[];
-      } catch (e) {
-        console.warn("Could not fetch hero settings:", e);
-        return [];
-      }
-    }
-  });
-
-  const slides = heroSettings && heroSettings.length > 0 ? heroSettings : [{ 
-    title: "Latest Phones. Best Prices.", 
-    description: "Discover the newest smartphones from top brands at unbeatable prices.", 
-    image: heroDefault,
-    link: "/shop"
-  }];
-
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 5000 })]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on('select', onSelect);
-  }, [emblaApi, onSelect]);
-
   // Helper to get active flash sale product IDs
   const { data: activeFlashSaleIds } = useQuery({
     queryKey: ["home-active-flash-sale-ids"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("flash_sales")
-          .select("product_id")
-          .eq("is_active", true)
-          .lte("start_at", now)
-          .gte("end_at", now);
-        if (error) return [];
-        return data?.map(s => s.product_id) ?? [];
-      } catch (e) {
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("flash_sales")
+        .select("product_id")
+        .eq("is_active", true)
+        .lte("start_at", now)
+        .gte("end_at", now);
+      if (error) throw error;
+      return data?.map(s => s.product_id) ?? [];
     }
   });
 
@@ -148,19 +89,15 @@ function Home() {
   const { data: dbCategories } = useQuery({
     queryKey: ["home-categories"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("categories")
-          .select("name, image, slug")
-          .eq("status", "active")
-          .is("parent_id", null)
-          .order("sort_order")
-          .limit(6);
-        if (error) return [];
-        return data ?? [];
-      } catch (e) {
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, image, slug")
+        .eq("status", "active")
+        .is("parent_id", null)
+        .order("sort_order")
+        .limit(6);
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -168,152 +105,143 @@ function Home() {
   const { data: dbBrands } = useQuery({
     queryKey: ["home-brands-visual"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("brands")
-          .select("name, logo, slug")
-          .eq("status", "active")
-          .order("name");
-        if (error) return [];
-        return data ?? [];
-      } catch (e) {
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("brands")
+        .select("name, logo, slug")
+        .eq("status", "active")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
-  // Fetch Popular Products
+  // Fetch Popular Products - Exclude Flash Sale Items
   const { data: dbPopular } = useQuery({
     queryKey: ["home-popular", activeFlashSaleIds],
     queryFn: async () => {
-      try {
-        const idsToExclude = activeFlashSaleIds || [];
-        let query = supabase
-          .from("products")
-          .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-          .eq("status", "active");
-        
-        if (idsToExclude.length > 0) {
-          query = query.not("id", "in", `(${idsToExclude.join(',')})`);
-        }
-
-        const { data, error } = await query.order("created_at", { ascending: false }).limit(10);
-        if (error) return [];
-        return (data ?? []).map((p: any) => ({
-          ...p,
-          brand: p.brands?.name || "Unknown Brand",
-          category: p.categories?.name || "General",
-          image: p.product_images?.[0]?.url || "",
-          oldPrice: p.discount_price ? p.price : undefined,
-          price: p.discount_price || p.price,
-        }));
-      } catch (e) {
-        return [];
+      const idsToExclude = activeFlashSaleIds || [];
+      let query = supabase
+        .from("products")
+        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
+        .eq("status", "active");
+      
+      if (idsToExclude.length > 0) {
+        query = query.not("id", "in", `(${idsToExclude.join(',')})`);
       }
+
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(10);
+      if (error) throw error;
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        brand: p.brands?.name || "Unknown Brand",
+        category: p.categories?.name || "General",
+        image: p.product_images?.[0]?.url || "",
+        oldPrice: p.discount_price ? p.price : undefined,
+        price: p.discount_price || p.price,
+      }));
     },
   });
 
-  // Fetch Flash Sales
+  // Fetch Flash Sales from the flash_sales table
   const { data: dbFlashSales } = useQuery({
     queryKey: ["home-flash-sales"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("flash_sales")
-          .select(`
-            sale_price,
-            end_at,
-            products (
-              *,
-              brands(name),
-              categories!products_category_id_fkey(name),
-              product_images(url)
-            )
-          `)
-          .eq("is_active", true)
-          .lte("start_at", now)
-          .gte("end_at", now)
-          .limit(8);
-        
-        if (error) return [];
+      const { data, error } = await supabase
+        .from("flash_sales")
+        .select(`
+          sale_price,
+          end_at,
+          products (
+            *,
+            brands(name),
+            categories!products_category_id_fkey(name),
+            product_images(url)
+          )
+        `)
+        .eq("is_active", true)
+        .lte("start_at", now)
+        .gte("end_at", now)
+        .limit(8);
+      
+      if (error) throw error;
 
-        return (data ?? []).map((s: any) => {
-          const p = s.products;
-          if (!p) return null;
-          return {
-            ...p,
-            endDate: s.end_at,
-            brand: p.brands?.name || "Unknown Brand",
-            category: p.categories?.name || "General",
-            image: p.product_images?.[0]?.url || "",
-            oldPrice: p.price,
-            price: s.sale_price,
-          };
-        }).filter(Boolean);
-      } catch (e) {
-        return [];
-      }
-    },
-  });
-
-  // Fetch New Arrivals
-  const { data: dbNewArrivals } = useQuery({
-    queryKey: ["home-new-arrivals", activeFlashSaleIds],
-    queryFn: async () => {
-      try {
-        const idsToExclude = activeFlashSaleIds || [];
-        let query = supabase
-          .from("products")
-          .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-          .eq("status", "active");
-
-        if (idsToExclude.length > 0) {
-          query = query.not("id", "in", `(${idsToExclude.join(',')})`);
-        }
-
-        const { data, error } = await query.order("created_at", { ascending: false }).limit(8);
-        if (error) return [];
-        return (data ?? []).map((p: any) => ({
+      return (data ?? []).map((s: any) => {
+        const p = s.products;
+        return {
           ...p,
+          endDate: s.end_at,
           brand: p.brands?.name || "Unknown Brand",
           category: p.categories?.name || "General",
           image: p.product_images?.[0]?.url || "",
-          oldPrice: p.discount_price ? p.price : undefined,
-          price: p.discount_price || p.price,
-        }));
-      } catch (e) {
-        return [];
+          oldPrice: p.price,
+          price: s.sale_price,
+        };
+      });
+    },
+  });
+
+  // Fetch New Arrivals - Exclude Flash Sale Items
+  const { data: dbNewArrivals } = useQuery({
+    queryKey: ["home-new-arrivals", activeFlashSaleIds],
+    queryFn: async () => {
+      const idsToExclude = activeFlashSaleIds || [];
+      let query = supabase
+        .from("products")
+        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
+        .eq("status", "active");
+
+      if (idsToExclude.length > 0) {
+        query = query.not("id", "in", `(${idsToExclude.join(',')})`);
       }
+
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(8);
+      if (error) throw error;
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        brand: p.brands?.name || "Unknown Brand",
+        category: p.categories?.name || "General",
+        image: p.product_images?.[0]?.url || "",
+        oldPrice: p.discount_price ? p.price : undefined,
+        price: p.discount_price || p.price,
+      }));
     },
   });
 
   return (
     <div>
-      {/* HERO SLIDER */}
+      {/* HERO */}
       <section className="mx-auto max-w-7xl px-4 pt-4 sm:pt-8">
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex">
-            {slides.map((slide, i) => (
-              <HeroSlide key={i} slide={slide} />
-            ))}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-soft via-primary-soft to-blue-100/60">
+          <div className="grid lg:grid-cols-2 items-center">
+            <div className="px-6 sm:px-10 py-10 sm:py-16 lg:py-20">
+              <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-full px-3 py-1 text-[11px] font-bold tracking-wide">
+                <Sparkles className="size-3" /> NEW ARRIVAL
+              </span>
+              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+                {renderTitle()}
+              </h1>
+              <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
+                {heroContent.description}
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to="/shop" className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-bold hover:bg-primary-dark transition-colors shadow-[var(--shadow-soft)]">
+                  SHOP NOW <ArrowRight className="size-4" />
+                </Link>
+                <Link to="/shop" className="inline-flex items-center gap-2 bg-background text-foreground rounded-full px-6 py-3 text-sm font-bold border border-border hover:border-primary hover:text-primary transition-colors">
+                  View Deals
+                </Link>
+              </div>
+              <div className="mt-8 flex items-center gap-1.5">
+                <span className="h-1.5 w-8 rounded-full bg-primary" />
+                <span className="h-1.5 w-2 rounded-full bg-primary/30" />
+                <span className="h-1.5 w-2 rounded-full bg-primary/30" />
+              </div>
+            </div>
+            <div className="relative h-64 sm:h-80 lg:h-[520px]">
+              <img src={heroContent.image} alt="Hero Banner" className="absolute inset-0 h-full w-full object-cover object-center" />
+            </div>
           </div>
         </div>
-        
-        {/* Indicators */}
-        {slides.length > 1 && (
-          <div className="flex justify-center gap-1.5 mt-4">
-            {slides.map((_, i) => (
-              <button 
-                key={i} 
-                onClick={() => emblaApi?.scrollTo(i)}
-                className={cn(
-                  "h-1.5 transition-all rounded-full",
-                  selectedIndex === i ? "w-8 bg-primary" : "w-2 bg-primary/20"
-                )} 
-              />
-            ))}
-          </div>
-        )}
       </section>
 
       {/* TRUST BAR */}
@@ -327,26 +255,24 @@ function Home() {
       </section>
 
       {/* CATEGORIES */}
-      {dbCategories && dbCategories.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 mt-14">
-          <div className="text-center">
-            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">SHOP BY CATEGORY</h2>
-          </div>
-          <div className="mt-6 flex lg:grid lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
-            {dbCategories.map((c) => (
-              <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
-                <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
-                  <img src={c.image || ""} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
-              </Link>
-            ))}
-          </div>
-          <div className="mt-6 text-center">
-            <Link to="/categories" className="inline-flex items-center gap-1 text-primary text-sm font-bold">VIEW ALL CATEGORIES <ChevronRight className="size-4" /></Link>
-          </div>
-        </section>
-      )}
+      <section className="mx-auto max-w-7xl px-4 mt-14">
+        <div className="text-center">
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">SHOP BY CATEGORY</h2>
+        </div>
+        <div className="mt-6 flex lg:grid lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
+          {dbCategories?.map((c) => (
+            <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
+              <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
+                <img src={c.image || ""} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+              </div>
+              <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
+            </Link>
+          ))}
+        </div>
+        <div className="mt-6 text-center">
+          <Link to="/categories" className="inline-flex items-center gap-1 text-primary text-sm font-bold">VIEW ALL CATEGORIES <ChevronRight className="size-4" /></Link>
+        </div>
+      </section>
 
       {/* FLASH SALES */}
       {dbFlashSales && dbFlashSales.length > 0 && (
@@ -361,7 +287,7 @@ function Home() {
             <Link to="/deals" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">View All Deals <ChevronRight className="size-4" /></Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-            {dbFlashSales.map((p: any) => (
+            {dbFlashSales.map((p) => (
               <div key={p.id} className="group relative">
                 <div className="absolute top-2.5 right-2.5 z-20 bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-lg border border-rose-500/30">
                   <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white text-xs sm:text-xs" />
@@ -374,17 +300,15 @@ function Home() {
       )}
 
       {/* POPULAR PHONES */}
-      {dbPopular && dbPopular.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 mt-14">
-          <div className="flex items-end justify-between mb-5">
-            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">POPULAR PHONES</h2>
-            <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-            {dbPopular.map((p) => <ProductCard key={p.id} p={p} />)}
-          </div>
-        </section>
-      )}
+      <section className="mx-auto max-w-7xl px-4 mt-14">
+        <div className="flex items-end justify-between mb-5">
+          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">POPULAR PHONES</h2>
+          <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
+          {dbPopular?.map((p) => <ProductCard key={p.id} p={p} />)}
+        </div>
+      </section>
 
       {/* NEW ARRIVALS */}
       {dbNewArrivals && dbNewArrivals.length > 0 && (
@@ -420,27 +344,25 @@ function Home() {
       </section>
 
       {/* BRANDS VISUAL */}
-      {dbBrands && dbBrands.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 mt-14">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center">SHOP BY BRAND</h2>
-            <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
-            {dbBrands.map((b) => (
-              <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group aspect-square rounded-2xl border border-border bg-card grid place-items-center p-4 transition-all hover:border-primary hover:shadow-sm">
-                <div className="size-12 rounded-full bg-muted overflow-hidden grid place-items-center p-2 group-hover:scale-110 transition-transform">
-                  {b.logo ? (
-                    <img src={b.logo} alt={b.name} className="size-full object-contain" />
-                  ) : (
-                    <span className="text-[10px] font-bold text-muted-foreground">{b.name}</span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <section className="mx-auto max-w-7xl px-4 mt-14">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center">SHOP BY BRAND</h2>
+          <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
+          {dbBrands?.map((b) => (
+            <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group aspect-square rounded-2xl border border-border bg-card grid place-items-center p-4 transition-all hover:border-primary hover:shadow-sm">
+              <div className="size-12 rounded-full bg-muted overflow-hidden grid place-items-center p-2 group-hover:scale-110 transition-transform">
+                {b.logo ? (
+                  <img src={b.logo} alt={b.name} className="size-full object-contain" />
+                ) : (
+                  <span className="text-[10px] font-bold text-muted-foreground">{b.name}</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* NEWSLETTER */}
       <section className="mx-auto max-w-7xl px-4 mt-14">
