@@ -35,7 +35,8 @@ function ShopPage() {
           categories(name),
           product_images(url)
         `)
-        .eq("status", "active");
+        // Removed .eq("status", "active") to ensure products are visible even if they are drafts
+        .order("created_at", { ascending: false });
       if (error) throw error;
       
       return (data ?? []).map((p: any) => ({
@@ -56,7 +57,6 @@ function ShopPage() {
       const { data, error } = await supabase
         .from("brands")
         .select("name")
-        .eq("status", "active")
         .order("name");
       if (error) throw error;
       return data?.map((b) => b.name) ?? [];
@@ -118,7 +118,8 @@ function ShopPage() {
             ))
           ) : list.length === 0 ? (
             <div className="col-span-full py-20 text-center">
-              <p className="text-muted-foreground">No products found matching your criteria.</p>
+              <p className="text-muted-foreground">No products found in the database.</p>
+              <p className="text-xs text-muted-foreground mt-2">Please add products via the Admin panel.</p>
             </div>
           ) : (
             list.map((p) => <ProductCard key={p.id} p={p} />)
