@@ -102,11 +102,34 @@ export function BottomNav() {
 }
 
 export function Footer() {
-  const cols: { title: string; links: string[] }[] = [
-    { title: "Shop", links: ["Smartphones", "Tablets", "Smartwatches", "Earbuds", "Accessories"] },
-    { title: "Customer Support", links: ["Help Center", "Order Tracking", "Returns", "Warranty", "Contact"] },
-    { title: "Company", links: ["About Us", "Stores", "Careers", "Blog", "Press"] },
-    { title: "Legal", links: ["Privacy", "Terms", "Refund Policy", "Shipping Policy"] },
+  const cols: { title: string; links: { label: string; to: string }[] }[] = [
+    { title: "Shop", links: [
+      { label: "Smartphones", to: "/shop" },
+      { label: "Tablets", to: "/shop" },
+      { label: "Smartwatches", to: "/shop" },
+      { label: "Earbuds", to: "/shop" },
+      { label: "Accessories", to: "/shop" },
+    ]},
+    { title: "Customer Support", links: [
+      { label: "Help Center", to: "/contact" },
+      { label: "Order Tracking", to: "/contact" },
+      { label: "Returns", to: "/refund-policy" },
+      { label: "Warranty", to: "/contact" },
+      { label: "Contact", to: "/contact" },
+    ]},
+    { title: "Company", links: [
+      { label: "About Us", to: "/" },
+      { label: "Stores", to: "/contact" },
+      { label: "Careers", to: "/" },
+      { label: "Blog", to: "/" },
+      { label: "Press", to: "/" },
+    ]},
+    { title: "Legal", links: [
+      { label: "Privacy", to: "/privacy" },
+      { label: "Terms", to: "/terms" },
+      { label: "Refund Policy", to: "/refund-policy" },
+      { label: "Shipping Policy", to: "/shipping-policy" },
+    ]},
   ];
   return (
     <footer className="mt-20 border-t border-border bg-muted/40">
@@ -119,7 +142,7 @@ export function Footer() {
           <div key={c.title}>
             <h4 className="text-sm font-bold mb-3">{c.title}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              {c.links.map((l) => <li key={l}><a href="#" className="hover:text-primary">{l}</a></li>)}
+              {c.links.map((l) => <li key={l.label}><Link to={l.to} className="hover:text-primary transition-colors">{l.label}</Link></li>)}
             </ul>
           </div>
         ))}
