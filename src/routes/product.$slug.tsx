@@ -174,7 +174,7 @@ function ProductPage() {
               <Timer className="size-5 text-rose-600 shrink-0 animate-spin duration-3000" />
               <div>
                 <p className="text-xs font-bold text-rose-600 uppercase tracking-wide">Limited Time Left</p>
-                <div className="mt-0.5"><FlashSaleTimer expiresAt={p.activeFlashSale.end_at} className="text-rose-600 text-xs" /></div>
+                <div className="mt-0.5"><FlashSaleTimer expiresAt={p.activeFlashSale.end_at} className="text-rose-600 text-sm sm:text-base font-black" /></div>
               </div>
             </div>
           )}

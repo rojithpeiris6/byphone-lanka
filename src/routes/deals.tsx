@@ -120,8 +120,8 @@ function DealsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
             {flashSales?.map((p) => (
               <div key={p.id} className="group relative">
-                <div className="absolute top-3 right-3 z-20 bg-rose-600 text-white px-2 py-1 rounded-lg shadow-sm">
-                  <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white" />
+                <div className="absolute top-2.5 right-2.5 z-20 bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-lg border border-rose-500/30">
+                  <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white text-xs sm:text-xs" />
                 </div>
                 <ProductCard p={p} showWishlist={false} />
               </div>
@@ -151,7 +151,7 @@ function DealsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
-            {generalDeals?.map((p) => <ProductCard key={p.id} p={p} />)}
+            {generalDeals?.map((p) => <ProductCard p={p} />)}
           </div>
         )}
       </section>

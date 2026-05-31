@@ -35,8 +35,8 @@ export function FlashSaleTimer({ expiresAt, className }: FlashSaleTimerProps) {
   }, [expiresAt]);
 
   return (
-    <div className={cn("flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-tighter", className)}>
-      <Timer className="size-3" />
+    <div className={cn("flex items-center gap-1.5 font-mono text-xs sm:text-sm font-extrabold uppercase tracking-tight", className)}>
+      <Timer className="size-4 shrink-0" />
       {timeLeft}
     </div>
   );
