@@ -56,8 +56,8 @@ export function AdminLayout() {
     return <Navigate to="/admin/login" />;
   }
 
-  // If logged in but doesn't have required role, redirect to home
-  if (user && role && !allowedRoles.includes(role) && !isLoginPage) {
+  // Robust role protection: if user is logged in but doesn't have an allowed role, kick them to home
+  if (user && !isLoginPage && !allowedRoles.includes(role ?? "")) {
     return <Navigate to="/" />;
   }
 
