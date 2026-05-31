@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
-import { Tag, ShoppingBag } from "lucide-react";
+import { Tag, ShoppingBag, Timer } from "lucide-react";
+import { FlashSaleTimer } from "@/components/FlashSaleTimer";
 
 export const Route = createFileRoute("/deals")({
   head: () => ({
@@ -15,8 +16,48 @@ export const Route = createFileRoute("/deals")({
 });
 
 function DealsPage() {
-  const { data: deals, isLoading } = useQuery({
-    queryKey: ["shop-deals"],
+  // 1. Fetch Active Flash Sales
+  const { data: flashSales, isLoading: loadingFlash } = useQuery({
+    queryKey: ["deals-flash-sales"],
+    queryFn: async () => {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from("flash_sales")
+        .select(`
+          sale_price,
+          end_at,
+          products (
+            *,
+            brands(name),
+            categories!products_category_id_fkey(name),
+            product_images(url)
+          )
+        `)
+        .eq("is_active", true)
+        .lte("start_at", now)
+        .gte("end_at", now)
+        .order("end_at", { ascending: true });
+      
+      if (error) throw error;
+
+      return (data ?? []).map((s: any) => {
+        const p = s.products;
+        return {
+          ...p,
+          endDate: s.end_at,
+          brand: p.brands?.name || "Unknown Brand",
+          category: p.categories?.name || "General",
+          image: p.product_images?.[0]?.url || "",
+          oldPrice: p.price,
+          price: s.sale_price,
+        };
+      });
+    },
+  });
+
+  // 2. Fetch General Discounted Products
+  const { data: generalDeals, isLoading: loadingGeneral } = useQuery({
+    queryKey: ["deals-general"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -26,7 +67,7 @@ function DealsPage() {
           categories!products_category_id_fkey(name),
           product_images(url)
         `)
-        .neq("discount_price", 0) // Filter for products that have a discount price
+        .neq("discount_price", 0)
         .not("discount_price", "is", null)
         .eq("status", "active")
         .order("discount_price", { ascending: true });
@@ -56,23 +97,64 @@ function DealsPage() {
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
-          ))}
+      {/* FLASH DEALS SECTION */}
+      <section className="mb-16">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="size-8 rounded-full bg-rose-500 text-white flex items-center justify-center animate-pulse">
+            <Timer className="size-4" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">Active Flash Sales</h2>
         </div>
-      ) : deals?.length === 0 ? (
-        <div className="py-20 text-center">
-          <ShoppingBag className="size-16 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="text-xl font-bold">No deals available right now</h3>
-          <p className="text-muted-foreground mt-2">Check back soon for new offers!</p>
+        
+        {loadingFlash ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
+            ))}
+          </div>
+        ) : flashSales?.length === 0 ? (
+          <div className="py-10 text-center bg-muted/30 rounded-3xl border border-dashed border-border">
+            <p className="text-muted-foreground">No active flash sales at the moment. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+            {flashSales?.map((p) => (
+              <div key={p.id} className="group relative">
+                <div className="absolute top-3 right-3 z-20 bg-rose-600 text-white px-2 py-1 rounded-lg shadow-sm">
+                  <FlashSaleTimer expiresAt={p.endDate || ""} />
+                </div>
+                <ProductCard p={p} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* GENERAL OFFERS SECTION */}
+      <section>
+        <div className="flex items-center gap-2 mb-6">
+          <ShoppingBag className="size-6 text-primary" />
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">Special Offers</h2>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
-          {deals?.map((p) => <ProductCard key={p.id} p={p} />)}
-        </div>
-      )}
+        
+        {loadingGeneral ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
+            ))}
+          </div>
+        ) : generalDeals?.length === 0 ? (
+          <div className="py-20 text-center">
+            <ShoppingBag className="size-16 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-xl font-bold">No other deals available right now</h3>
+            <p className="text-muted-foreground mt-2">Check back soon for new offers!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+            {generalDeals?.map((p) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
