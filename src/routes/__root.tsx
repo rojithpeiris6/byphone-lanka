@@ -16,6 +16,7 @@ import { Header, BottomNav, Footer } from "@/components/layout";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminAuthProvider } from "@/lib/admin-auth";
+import { CustomerAuthProvider } from "@/lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -98,23 +99,25 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AdminAuthProvider>
-        {isAdmin ? (
-          <>
-            <Outlet />
-            <Toaster position="top-center" richColors />
-          </>
-        ) : (
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1 pb-20 lg:pb-0">
+        <CustomerAuthProvider>
+          {isAdmin ? (
+            <>
               <Outlet />
-            </main>
-            <Footer />
-            <BottomNav />
-            <CartDrawer />
-            <Toaster position="top-center" richColors />
-          </div>
-        )}
+              <Toaster position="top-center" richColors />
+            </>
+          ) : (
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1 pb-20 lg:pb-0">
+                <Outlet />
+              </main>
+              <Footer />
+              <BottomNav />
+              <CartDrawer />
+              <Toaster position="top-center" richColors />
+            </div>
+          )}
+        </CustomerAuthProvider>
       </AdminAuthProvider>
     </QueryClientProvider>
   );
