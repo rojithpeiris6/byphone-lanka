@@ -76,6 +76,34 @@ function ProductPage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState<"specs" | "desc" | "reviews" | "warranty">("specs");
 
+  // Filter unique available images
+  const allImages = useMemo(() => {
+    const list = p.product_images?.map((img: any) => img.url) || [];
+    if (list.length === 0 && p.image) {
+      list.push(p.image);
+    }
+    return Array.from(new Set(list)) as string[];
+  }, [p.product_images, p.image]);
+
+  const [activeImage, setActiveImage] = useState(allImages[0] || p.image);
+
+  // Zoom styles
+  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomStyle({
+      transformOrigin: `${x}% ${y}%`,
+      transform: "scale(2.2)",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setZoomStyle({});
+  };
+
   // Review states
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
@@ -282,15 +310,36 @@ function ProductPage() {
         {/* Gallery */}
         <div className="lg:flex gap-4">
           <div className="hidden lg:flex flex-col gap-2 w-20 shrink-0">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <button key={i} className={"aspect-square rounded-xl border-2 overflow-hidden bg-muted/40 " + (i === 0 ? "border-primary" : "border-border")}>
-                <img src={p.image} alt="" className="h-full w-full object-contain p-2" />
+            {allImages.map((imgUrl, i) => (
+              <button 
+                key={i} 
+                onClick={() => setActiveImage(imgUrl)}
+                className={cn(
+                  "aspect-square rounded-xl border-2 overflow-hidden bg-muted/40 transition-all p-1",
+                  activeImage === imgUrl ? "border-primary scale-[1.03] shadow-sm" : "border-border hover:border-primary/50"
+                )}
+              >
+                <img src={imgUrl} alt="" className="h-full w-full object-contain" />
               </button>
             ))}
           </div>
-          <div className="relative flex-1 aspect-square rounded-2xl bg-muted/40 grid place-items-center overflow-hidden">
-            <img src={p.image} alt={p.name} width={800} height={800} className="h-full w-full object-contain p-6" />
-            <button className="absolute top-4 right-4 size-9 grid place-items-center rounded-full bg-background border border-border"><Maximize2 className="size-4" /></button>
+          
+          <div 
+            className="relative flex-1 aspect-square rounded-2xl bg-muted/40 grid place-items-center overflow-hidden cursor-zoom-in"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          >
+            <img 
+              src={activeImage} 
+              alt={p.name} 
+              width={800} 
+              height={800} 
+              style={zoomStyle}
+              className="h-full w-full object-contain p-6 transition-transform duration-75 ease-out" 
+            />
+            <button className="absolute top-4 right-4 size-9 grid place-items-center rounded-full bg-background border border-border pointer-events-none shadow-sm">
+              <Maximize2 className="size-4" />
+            </button>
           </div>
         </div>
 
