@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Mail, HelpCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle } from "lucide-react";
 import hero from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
-import { FlashSaleTimer } from "@/components/FlashSaleTimer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,6 +30,38 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
         <p className="text-xs sm:text-sm font-bold uppercase tracking-wide leading-tight">{title}</p>
         <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">{sub}</p>
       </div>
+    </div>
+  );
+}
+
+function CountdownTimer({ expiresAt }: { expiresAt: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = new Date(expiresAt).getTime() - now;
+
+      if (distance < 0) {
+        setTimeLeft("EXPIRED");
+        clearInterval(timer);
+        return;
+      }
+
+      const hours = Math.floor((distance / (1000 * 60 * 60)));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [expiresAt]);
+
+  return (
+    <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-tighter text-rose-600">
+      <Timer className="size-3" />
+      {timeLeft}
     </div>
   );
 }
@@ -232,7 +264,7 @@ function Home() {
             {dbFlashSales.map((p) => (
               <div key={p.id} className="group relative">
                 <div className="absolute top-2 right-2 z-20 bg-rose-600 text-white px-2 py-1 rounded-lg shadow-sm">
-                  <FlashSaleTimer expiresAt={p.endDate || ""} />
+                  <CountdownTimer expiresAt={p.endDate || ""} />
                 </div>
                 <ProductCard p={p} />
               </div>
