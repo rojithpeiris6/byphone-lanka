@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useEffect } from "react";
-import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2, Ticket } from "lucide-react";
+import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2, Ticket, Check } from "lucide-react";
 import { useCart, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
 import { placeOrder } from "@/lib/api/orders.functions";
@@ -8,6 +8,7 @@ import { validateCoupon } from "@/lib/api/coupons.functions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 const SRI_LANKA_DISTRICTS = [
   "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara",
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
       { title: "Checkout — byphone.lk" },
-      { name: "description", content: "Secure checkout. Pay with COD, Card, Bank Transfer, KOKO or MintPay." },
+      { name: "description", content: "Secure checkout. Pay with Card (PayPal/PayHere) or Cash on Delivery." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -33,7 +34,8 @@ function Checkout() {
   const { user } = useAuth();
   
   const [delivery, setDelivery] = useState<"std" | "exp">("std");
-  const [payment, setPayment] = useState("cod");
+  const [payment, setPayment] = useState("card");
+  const [provider, setProvider] = useState<"payhere" | "paypal">("payhere");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
@@ -49,7 +51,6 @@ function Checkout() {
     district: "",
   });
 
-  // Fetch user profile for auto-fill
   const { data: profile } = useQuery({
     queryKey: ["checkout-user-profile", user?.id],
     queryFn: async () => {
@@ -78,7 +79,6 @@ function Checkout() {
     }
   }, [profile]);
 
-  // 1. Fetch real-time product and variant data from DB, including active flash sales
   const { data: cartData, isLoading: loadingProducts } = useQuery({
     queryKey: ["checkout-data", items],
     queryFn: async () => {
@@ -88,21 +88,18 @@ function Checkout() {
       const variantIds = items.filter(i => i.variantId).map(i => i.variantId!).filter(Boolean);
       const now = new Date().toISOString();
 
-      // Fetch products
       const { data: dbProducts, error: pError } = await supabase
         .from("products")
         .select(`*, product_images(url), flash_sales(sale_price, is_active, start_at, end_at)`)
         .in("id", productIds);
       if (pError) throw pError;
 
-      // Fetch variants
       const { data: dbVariants, error: vError } = await supabase
         .from("product_variants")
         .select("*")
         .in("id", variantIds);
       if (vError) throw vError;
 
-      // Map variants for easy lookup
       const variantMap: Record<string, any> = {};
       dbVariants?.forEach(v => { variantMap[v.id] = v; });
 
@@ -124,7 +121,6 @@ function Checkout() {
     },
   });
 
-  // 2. Calculate subtotal based on ACTUAL DB prices and active flash sales
   const subtotal = useMemo(() => {
     if (!cartData?.products) return 0;
     
@@ -132,7 +128,6 @@ function Checkout() {
       const product = cartData.products.find(p => p.id === item.productId);
       if (!product) return acc;
 
-      // Priority: Flash Sale Price > Discount Price > Regular Price
       let price = product.active_flash_sale?.sale_price || product.discount_price || product.price;
       if (item.variantId && cartData.variants[item.variantId]) {
         price += cartData.variants[item.variantId].price_diff;
@@ -195,6 +190,7 @@ function Checkout() {
           },
           shippingMethod: delivery,
           paymentMethod: payment,
+          paymentProvider: payment === "card" ? provider : undefined,
           items: items.map(i => ({
             productId: i.productId,
             variantId: i.variantId,
@@ -268,23 +264,72 @@ function Checkout() {
               <div className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-bold">2</div>
               <h2 className="text-lg font-extrabold">Payment Method</h2>
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">Choose a payment method</p>
-            <div className="mt-3 space-y-2">
-              <PayOption id="cod" value={payment} onChange={setPayment} Icon={Banknote} title="Cash on Delivery" sub="Pay when you receive your order" />
-              <PayOption id="card" value={payment} onChange={setPayment} Icon={CreditCard} title="Card Payment" sub="Pay securely using your debit or credit card" right="VISA · MC · AMEX" />
-              <PayOption id="bank" value={payment} onChange={setPayment} Icon={Building2} title="Bank Transfer" sub="Make payment directly to our bank account" />
-              <PayOption id="koko" value={payment} onChange={setPayment} Icon={Building2} title="KOKO by HNB" sub="Buy now, pay in 3 interest-free payments" right="KOKO" />
-              <PayOption id="mint" value={payment} onChange={setPayment} Icon={Building2} title="MintPay" sub="Split into 3 easy installments" right="MINT" />
+            
+            <div className="mt-5 space-y-4">
+              <div className="grid gap-3">
+                <PayOption 
+                  id="card" 
+                  value={payment} 
+                  onChange={setPayment} 
+                  Icon={CreditCard} 
+                  title="Card Payment" 
+                  sub="Visa, Mastercard via Secure Gateways" 
+                  right="INSTANT" 
+                />
+                
+                {payment === "card" && (
+                  <div className="ml-8 grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
+                    <button 
+                      onClick={() => setProvider("payhere")}
+                      className={cn(
+                        "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all",
+                        provider === "payhere" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <div className="h-6 flex items-center"><span className="text-sm font-black italic text-[#003087]">Pay<span className="text-[#009cde]">Here</span></span></div>
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Local Gateway</span>
+                      {provider === "payhere" && <div className="absolute top-2 right-2"><Check className="size-3 text-primary" /></div>}
+                    </button>
+                    <button 
+                      onClick={() => setProvider("paypal")}
+                      className={cn(
+                        "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all relative",
+                        provider === "paypal" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <div className="h-6 flex items-center"><span className="text-sm font-black italic text-[#003087]">Pay<span className="text-[#009cde]">Pal</span></span></div>
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Global Gateway</span>
+                      {provider === "paypal" && <div className="absolute top-2 right-2"><Check className="size-3 text-primary" /></div>}
+                    </button>
+                  </div>
+                )}
+
+                <PayOption 
+                  id="cod" 
+                  value={payment} 
+                  onChange={setPayment} 
+                  Icon={Banknote} 
+                  title="Cash on Delivery" 
+                  sub="Pay when you receive your order" 
+                />
+              </div>
             </div>
-            <div className="mt-6 flex items-center justify-between">
+
+            <div className="mt-8 flex items-center justify-between">
               <Link to="/cart" className="text-sm font-semibold text-primary inline-flex items-center gap-1">← Back to Cart</Link>
               <button 
                 onClick={handlePlaceOrder} 
                 disabled={isSubmitting || loadingProducts}
-                className="bg-primary text-primary-foreground rounded-xl px-6 py-3 text-sm font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="bg-primary text-primary-foreground rounded-xl px-10 py-3.5 text-sm font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95"
               >
-                {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-                {isSubmitting ? "Processing..." : "Place Order"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  payment === "card" ? "Pay & Place Order" : "Confirm Order"
+                )}
               </button>
             </div>
           </section>
@@ -307,7 +352,6 @@ function Checkout() {
                   if (!p) return null;
                   const variant = i.variantId ? cartData?.variants[i.variantId] : null;
                   
-                  // Use Flash Sale price if available
                   const basePrice = p.active_flash_sale?.sale_price || p.discount_price || p.price;
                   const finalPrice = basePrice + (variant?.price_diff || 0);
 

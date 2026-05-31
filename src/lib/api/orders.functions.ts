@@ -15,6 +15,7 @@ const orderSchema = z.object({
   }),
   shippingMethod: z.enum(["std", "exp"]),
   paymentMethod: z.string(),
+  paymentProvider: z.string().optional(),
   items: z.array(z.object({
     productId: z.string(),
     variantId: z.string().optional(),
@@ -25,20 +26,17 @@ const orderSchema = z.object({
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator(orderSchema)
   .handler(async ({ data }) => {
-    const { customer, shippingMethod, paymentMethod, items } = data;
+    const { customer, shippingMethod, paymentMethod, paymentProvider, items } = data;
     const now = new Date().toISOString();
 
-    // Get the currently authenticated user if available
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData?.user?.id || null;
 
-    // 1. Calculate totals, validate stock and fetch current prices
     let subtotal = 0;
     const orderItemsToInsert = [];
     const stockUpdates = [];
 
     for (const item of items) {
-      // Fetch product details
       const { data: product, error: pError } = await supabaseAdmin
         .from("products")
         .select("id, price, name, sku, stock_quantity, discount_price")
@@ -47,12 +45,10 @@ export const placeOrder = createServerFn({ method: "POST" })
 
       if (pError || !product) throw new Error(`Product ${item.productId} not found`);
 
-      // Basic stock check
       if (product.stock_quantity < item.qty) {
         throw new Error(`Insufficient stock for ${product.name}. Only ${product.stock_quantity} left.`);
       }
 
-      // Check if there is an active flash sale for this product
       const { data: flashSale } = await supabaseAdmin
         .from("flash_sales")
         .select("sale_price")
@@ -62,10 +58,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         .gte("end_at", now)
         .maybeSingle();
 
-      // Determine the correct price (Priority: Flash Sale > Regular Price)
       let unitPrice = flashSale?.sale_price || product.discount_price || product.price;
 
-      // Fetch variant price difference if applicable
       if (item.variantId) {
         const { data: variant } = await supabaseAdmin
           .from("product_variants")
@@ -75,7 +69,6 @@ export const placeOrder = createServerFn({ method: "POST" })
 
         if (variant) {
           unitPrice += variant.price_diff;
-          // Variant stock check
           if (variant.stock_quantity < item.qty) {
             throw new Error(`Insufficient stock for ${product.name} variant. Only ${variant.stock_quantity} left.`);
           }
@@ -104,7 +97,6 @@ export const placeOrder = createServerFn({ method: "POST" })
     const total = subtotal + shippingFee;
     const orderNumber = `BP-${Math.floor(10000 + Math.random() * 90000)}-${Date.now().toString().slice(-4)}`;
 
-    // Find or create customer
     let customerId: string | null = null;
     const { data: existingCustomer } = await supabaseAdmin
       .from("customers")
@@ -114,7 +106,6 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     if (existingCustomer) {
       customerId = existingCustomer.id;
-      // Update customer details if logged in
       if (userId) {
         await supabaseAdmin
           .from("customers")
@@ -149,7 +140,6 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
 
-    // 2. Create the Order record
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
       .insert({
@@ -166,6 +156,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         shipping_fee: shippingFee,
         total,
         payment_method: paymentMethod,
+        payment_provider: paymentProvider || null,
         payment_status: paymentMethod === "cod" ? "pending" : "paid",
         status: "pending",
       })
@@ -174,7 +165,6 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     if (orderError) throw new Error(`Failed to create order: ${orderError.message}`);
 
-    // 3. Create the Order Items records
     const itemsWithOrderId = orderItemsToInsert.map(item => ({
       ...item,
       order_id: order.id,
@@ -188,7 +178,6 @@ export const placeOrder = createServerFn({ method: "POST" })
       throw new Error(`Order created but items failed: ${itemsError.message}`);
     }
 
-    // 4. Decrement Stock
     for (const update of stockUpdates) {
       const table = update.table === 'products' ? 'products' : 'product_variants';
 
