@@ -86,26 +86,40 @@ function Home() {
     },
   });
 
-  // Fetch Flash Sales (Discounted products)
+  // Fetch Flash Sales from the NEW flash_sales table
   const { data: dbFlashSales } = useQuery({
     queryKey: ["home-flash-sales"],
     queryFn: async () => {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
-        .from("products")
-        .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-        .eq("status", "active")
-        .not("discount_price", "is", null)
-        .gt("discount_price", 0)
+        .from("flash_sales")
+        .select(`
+          sale_price,
+          products (
+            *,
+            brands(name),
+            categories!products_category_id_fkey(name),
+            product_images(url)
+          )
+        `)
+        .eq("is_active", true)
+        .lte("start_at", now)
+        .gte("end_at", now)
         .limit(8);
+      
       if (error) throw error;
-      return (data ?? []).map((p: any) => ({
-        ...p,
-        brand: p.brands?.name || "Unknown Brand",
-        category: p.categories?.name || "General",
-        image: p.product_images?.[0]?.url || "",
-        oldPrice: p.price,
-        price: p.discount_price,
-      }));
+
+      return (data ?? []).map((s: any) => {
+        const p = s.products;
+        return {
+          ...p,
+          brand: p.brands?.name || "Unknown Brand",
+          category: p.categories?.name || "General",
+          image: p.product_images?.[0]?.url || "",
+          oldPrice: p.price,
+          price: s.sale_price,
+        };
+      });
     },
   });
 
