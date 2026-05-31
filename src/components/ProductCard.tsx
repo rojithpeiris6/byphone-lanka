@@ -6,11 +6,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { useState } from "react";
+import { ProductVariantSelector } from "@/components/ProductVariantSelector";
 
 export function ProductCard({ p }: { p: Product }) {
   const add = useCart((s) => s.add);
   const qc = useQueryClient();
   const { user } = useAuth();
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+
+  // Check if product has variants
+  const { data: variants } = useQuery({
+    queryKey: ["product-variants-check", p.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_variants")
+        .select("id")
+        .eq("product_id", p.id);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   // Check if product is in wishlist
   const { data: wishlist } = useQuery({
@@ -44,6 +60,15 @@ export function ProductCard({ p }: { p: Product }) {
       toast.success("Added to wishlist");
     }
     qc.invalidateQueries({ queryKey: ["wishlist"] });
+  };
+
+  const handleAddToCart = () => {
+    if (variants && variants.length > 0) {
+      setIsSelectorOpen(true);
+    } else {
+      add(p.id);
+      toast.success("Added to cart", { description: `${p.name} added to your cart` });
+    }
   };
 
   return (
@@ -81,12 +106,24 @@ export function ProductCard({ p }: { p: Product }) {
           {p.oldPrice && <span className="text-xs text-muted-foreground line-through">{formatLKR(p.oldPrice)}</span>}
         </div>
         <button
-          onClick={() => { add(p.id); }}
+          onClick={handleAddToCart}
           className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 text-primary text-sm font-semibold py-2 hover:bg-primary hover:text-primary-foreground transition-colors"
         >
           <ShoppingCart className="size-4" /> ADD TO CART
         </button>
       </div>
+
+      <ProductVariantSelector 
+        productId={p.id}
+        productName={p.name}
+        basePrice={p.price}
+        isOpen={isSelectorOpen}
+        onClose={() => setIsSelectorOpen(false)}
+        onAdd={(variantId, qty) => {
+          add(p.id, variantId, qty);
+          toast.success("Added to cart", { description: `${qty} items added to your cart` });
+        }}
+      />
     </div>
   );
 }
