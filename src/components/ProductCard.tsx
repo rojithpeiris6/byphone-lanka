@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useState } from "react";
 import { ProductVariantSelector } from "@/components/ProductVariantSelector";
 
-export function ProductCard({ p }: { p: Product }) {
+export function ProductCard({ p, showWishlist = true }: { p: Product; showWishlist?: boolean }) {
   const add = useCart((s) => s.add);
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -41,7 +41,7 @@ export function ProductCard({ p }: { p: Product }) {
         .single();
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && showWishlist,
   });
 
   const toggleWishlist = async () => {
@@ -76,18 +76,20 @@ export function ProductCard({ p }: { p: Product }) {
       {p.badge && (
         <span className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground text-[10px] font-bold tracking-wide px-2 py-1 rounded-full">{p.badge}</span>
       )}
-      <button 
-        onClick={toggleWishlist}
-        aria-label="Wishlist" 
-        className={cn(
-          "absolute top-3 right-3 z-10 size-8 grid place-items-center rounded-full backdrop-blur border transition-colors",
-          wishlist 
-            ? "bg-rose-50 border-rose-200 text-rose-500" 
-            : "bg-background/80 border-border text-muted-foreground hover:text-primary"
-        )}
-      >
-        <Heart className={cn("size-4", wishlist && "fill-rose-500")} />
-      </button>
+      {showWishlist && (
+        <button 
+          onClick={toggleWishlist}
+          aria-label="Wishlist" 
+          className={cn(
+            "absolute top-3 right-3 z-10 size-8 grid place-items-center rounded-full backdrop-blur border transition-colors",
+            wishlist 
+              ? "bg-rose-50 border-rose-200 text-rose-500" 
+              : "bg-background/80 border-border text-muted-foreground hover:text-primary"
+          )}
+        >
+          <Heart className={cn("size-4", wishlist && "fill-rose-500")} />
+        </button>
+      )}
       <Link to="/product/$slug" params={{ slug: p.slug }} className="aspect-square rounded-xl bg-muted/50 grid place-items-center overflow-hidden">
         <img src={p.image} alt={p.name} loading="lazy" width={400} height={400} className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105" />
       </Link>
