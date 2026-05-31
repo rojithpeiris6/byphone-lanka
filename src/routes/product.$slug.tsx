@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
     const now = new Date().toISOString();
-    const { data: product, error } = await supabase
+    const { data: product, error } = await (supabase as any)
       .from("products")
       .select(`
         *,
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/product/$slug")({
     if (error || !product) throw notFound();
 
     // Check for an active flash sale
-    const activeFlashSale = product.flash_sales?.find((s: any) => 
+    const activeFlashSale = (product.flash_sales as any)?.find((s: any) => 
       s.is_active && 
       new Date(s.start_at) <= new Date(now) && 
       new Date(s.end_at) >= new Date(now)
@@ -161,7 +161,7 @@ function ProductPage() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      let query = supabase.from("orders").select("id").eq("status", "delivered");
+      let query = (supabase as any).from("orders").select("id").eq("status", "delivered");
       if (profile?.id) {
         query = query.or(`customer_id.eq.${profile.id},customer_email.eq.${user.email}`);
       } else if (user.email) {
@@ -173,8 +173,8 @@ function ProductPage() {
       const { data: orders, error: ordersError } = await query;
       if (ordersError || !orders || orders.length === 0) return false;
 
-      const orderIds = orders.map(o => o.id);
-      const { data: items, error: itemsError } = await supabase
+      const orderIds = orders.map((o: any) => o.id);
+      const { data: items, error: itemsError } = await (supabase as any)
         .from("order_items")
         .select("id")
         .in("order_id", orderIds)

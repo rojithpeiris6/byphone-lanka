@@ -188,19 +188,19 @@ function SettingsPage() {
                   title="PayHere Gateway" 
                   desc="Accept local credit/debit card payments via PayHere."
                   active={form.payment_gateways?.payhere_enabled}
-                  onChange={v => updateForm('payment_gateways', 'payhere_enabled', v)}
+                  onChange={(v: boolean) => updateForm('payment_gateways', 'payhere_enabled', v)}
                 />
                 <ToggleRow 
                   title="PayPal" 
                   desc="Accept global payments via PayPal."
                   active={form.payment_gateways?.paypal_enabled}
-                  onChange={v => updateForm('payment_gateways', 'paypal_enabled', v)}
+                  onChange={(v: boolean) => updateForm('payment_gateways', 'paypal_enabled', v)}
                 />
                 <ToggleRow 
                   title="Cash on Delivery" 
                   desc="Allow customers to pay when they receive the order."
                   active={form.payment_gateways?.cod_enabled}
-                  onChange={v => updateForm('payment_gateways', 'cod_enabled', v)}
+                  onChange={(v: boolean) => updateForm('payment_gateways', 'cod_enabled', v)}
                 />
               </div>
             </Section>

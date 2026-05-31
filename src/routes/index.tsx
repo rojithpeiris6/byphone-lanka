@@ -42,7 +42,7 @@ function Home() {
   const { data: heroSettings } = useQuery({
     queryKey: ["home-hero-settings"],
     queryFn: async () => {
-      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_hero").single();
+      const { data } = await (supabase as any).from("settings").select("value").eq("key", "homepage_hero").single();
       return data?.value as any;
     }
   });
@@ -74,14 +74,14 @@ function Home() {
   const { data: activeFlashSaleIds } = useQuery({
     queryKey: ["home-active-flash-sale-ids"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("flash_sales")
         .select("product_id")
         .eq("is_active", true)
         .lte("start_at", now)
         .gte("end_at", now);
       if (error) throw error;
-      return data?.map(s => s.product_id) ?? [];
+      return data?.map((s: any) => s.product_id) ?? [];
     }
   });
 
@@ -146,7 +146,7 @@ function Home() {
   const { data: dbFlashSales } = useQuery({
     queryKey: ["home-flash-sales"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("flash_sales")
         .select(`
           sale_price,
@@ -287,7 +287,7 @@ function Home() {
             <Link to="/deals" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">View All Deals <ChevronRight className="size-4" /></Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-            {dbFlashSales.map((p) => (
+            {dbFlashSales.map((p: any) => (
               <div key={p.id} className="group relative">
                 <div className="absolute top-2.5 right-2.5 z-20 bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-lg border border-rose-500/30">
                   <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white text-xs sm:text-xs" />
@@ -306,7 +306,7 @@ function Home() {
           <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-          {dbPopular?.map((p) => <ProductCard key={p.id} p={p} />)}
+          {dbPopular?.map((p: any) => <ProductCard key={p.id} p={p} />)}
         </div>
       </section>
 
@@ -318,7 +318,7 @@ function Home() {
             <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">Browse All <ChevronRight className="size-4" /></Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-            {dbNewArrivals.map((p) => <ProductCard key={p.id} p={p} />)}
+            {dbNewArrivals.map((p: any) => <ProductCard key={p.id} p={p} />)}
           </div>
         </section>
       )}

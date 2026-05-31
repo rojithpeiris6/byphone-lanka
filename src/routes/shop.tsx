@@ -41,14 +41,14 @@ function ShopPage() {
   const { data: activeFlashSaleIds } = useQuery({
     queryKey: ["shop-active-flash-sale-ids"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("flash_sales")
         .select("product_id")
         .eq("is_active", true)
         .lte("start_at", now)
         .gte("end_at", now);
       if (error) throw error;
-      return data?.map(s => s.product_id) ?? [];
+      return data?.map((s: any) => s.product_id) ?? [];
     }
   });
 

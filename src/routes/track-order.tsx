@@ -4,6 +4,8 @@ import { z } from "zod";
 import { Package, Search, Truck, CheckCircle2, Clock, XCircle, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import React from "react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/track-order")({
   component: TrackOrderPage,
@@ -28,7 +30,7 @@ function TrackOrderPage() {
     setLoading(true);
     setOrder(null);
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("orders")
       .select("*")
       .eq("order_number", orderNumber.trim())
