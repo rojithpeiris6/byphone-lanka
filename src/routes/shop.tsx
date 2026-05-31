@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SlidersHorizontal, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
@@ -24,7 +25,7 @@ function ShopPage() {
   const [open, setOpen] = useState(false);
 
   // Fetch Products from DB
-  const { data: dbProducts, isLoading: loadingProducts } = useQuery({
+  const { data: dbProducts, isLoading: loadingProducts, error: fetchError } = useQuery({
     queryKey: ["shop-products"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,9 +36,15 @@ function ShopPage() {
           categories(name),
           product_images(url)
         `)
-        // Removed .eq("status", "active") to ensure products are visible even if they are drafts
         .order("created_at", { ascending: false });
-      if (error) throw error;
+      
+      if (error) {
+        toast.error("Database Error", { 
+          description: error.message,
+          duration: 5000 
+        });
+        throw error;
+      }
       
       return (data ?? []).map((p: any) => ({
         ...p,
@@ -57,6 +64,7 @@ function ShopPage() {
       const { data, error } = await supabase
         .from("brands")
         .select("name")
+        .eq("status", "active")
         .order("name");
       if (error) throw error;
       return data?.map((b) => b.name) ?? [];
@@ -116,6 +124,11 @@ function ShopPage() {
             Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
             ))
+          ) : fetchError ? (
+            <div className="col-span-full py-20 text-center">
+              <p className="text-destructive font-semibold">Failed to load products.</p>
+              <p className="text-sm text-muted-foreground mt-1">{fetchError.message}</p>
+            </div>
           ) : list.length === 0 ? (
             <div className="col-span-full py-20 text-center">
               <p className="text-muted-foreground">No products found in the database.</p>
