@@ -1,12 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const PAGE_SIZE = 12;
 
 export const Route = createFileRoute("/shop")({
+  validateSearch: z.object({
+    page: z.number().catch(1),
+    brand: z.string().optional(),
+    sort: z.string().optional().catch("featured"),
+  }),
   head: () => ({
     meta: [
       { title: "Shop Smartphones & Accessories — byphone.lk" },
@@ -20,24 +28,42 @@ export const Route = createFileRoute("/shop")({
 });
 
 function ShopPage() {
-  const [brand, setBrand] = useState<string | null>(null);
-  const [sort, setSort] = useState("featured");
+  const { brand, page, sort } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
 
-  // Fetch Products from DB
-  const { data: dbProducts, isLoading: loadingProducts, error: fetchError } = useQuery({
-    queryKey: ["shop-products"],
+  // Fetch Products from DB with pagination and sorting
+  const { data: dbData, isLoading: loadingProducts, error: fetchError } = useQuery({
+    queryKey: ["shop-products", page, brand, sort],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Map sort values to DB columns
+      const sortMap: Record<string, { column: string; ascending: boolean }> = {
+        "price-asc": { column: "price", ascending: true },
+        "price-desc": { column: "price", ascending: false },
+        "rating": { column: "created_at", ascending: false }, // fallback since rating isn't in DB schema
+        "featured": { column: "created_at", ascending: false },
+      };
+      const activeSort = sortMap[sort || "featured"] || sortMap["featured"];
+
+      let query = supabase
         .from("products")
         .select(`
           *,
           brands(name),
           categories!products_category_id_fkey(name),
           product_images(url)
-        `)
-        .order("created_at", { ascending: false });
-      
+        `, { count: 'exact' })
+        .eq("status", "active")
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+        .order(activeSort.column, { ascending: activeSort.ascending });
+
+      if (brand) {
+        // Filter using the joined table name
+        query = query.eq("brands.name", brand);
+      }
+
+      const { data, error, count } = await query;
+
       if (error) {
         toast.error("Database Error", { 
           description: error.message,
@@ -46,14 +72,17 @@ function ShopPage() {
         throw error;
       }
       
-      return (data ?? []).map((p: any) => ({
-        ...p,
-        brand: p.brands?.name || "Unknown Brand",
-        category: p.categories?.name || "General",
-        image: p.product_images?.[0]?.url || "",
-        oldPrice: p.discount_price ? p.price : undefined,
-        price: p.discount_price || p.price,
-      }));
+      return {
+        products: (data ?? []).map((p: any) => ({
+          ...p,
+          brand: p.brands?.name || "Unknown Brand",
+          category: p.categories?.name || "General",
+          image: p.product_images?.[0]?.url || "",
+          oldPrice: p.discount_price ? p.price : undefined,
+          price: p.discount_price || p.price,
+        })),
+        totalCount: count ?? 0,
+      };
     },
   });
 
@@ -71,23 +100,47 @@ function ShopPage() {
     },
   });
 
-  const list = useMemo(() => {
-    let l = [...(dbProducts ?? [])];
-    if (brand) l = l.filter((p) => p.brand === brand);
-    if (sort === "price-asc") l.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") l.sort((a, b) => b.price - a.price);
-    if (sort === "rating") l.sort((a, b) => b.rating - a.rating);
-    return l;
-  }, [dbProducts, brand, sort]);
+  const products = dbData?.products ?? [];
+  const totalCount = dbData?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const handleFilterChange = (newBrand: string | null) => {
+    navigate({
+      search: (prev) => ({ ...prev, brand: newBrand, page: 1 }),
+    });
+  };
+
+  const handleSortChange = (newSort: string) => {
+    navigate({
+      search: (prev) => ({ ...prev, sort: newSort, page: 1 }),
+    });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    navigate({
+      search: (prev) => ({ ...prev, page: newPage }),
+    });
+  };
 
   const Filters = (
     <div className="space-y-6">
       <div>
         <h4 className="text-sm font-bold mb-3">Brand</h4>
         <div className="space-y-2">
-          <button onClick={() => setBrand(null)} className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (!brand ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}>All Brands</button>
+          <button 
+            onClick={() => handleFilterChange(null)} 
+            className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (!brand ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}
+          >
+            All Brands
+          </button>
           {dbBrands?.map((b) => (
-            <button key={b} onClick={() => setBrand(b)} className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (brand === b ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}>{b}</button>
+            <button 
+              key={b} 
+              onClick={() => handleFilterChange(b)} 
+              className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (brand === b ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}
+            >
+              {b}
+            </button>
           ))}
         </div>
       </div>
@@ -100,13 +153,17 @@ function ShopPage() {
         <div>
           <p className="text-xs text-muted-foreground">Home / Shop</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">All Products</h1>
-          <p className="text-sm text-muted-foreground">{list.length} items</p>
+          <p className="text-sm text-muted-foreground">{totalCount} items</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setOpen(true)} className="lg:hidden inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold">
             <SlidersHorizontal className="size-4" /> Filters
           </button>
-          <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold">
+          <select 
+            value={sort} 
+            onChange={(e) => handleSortChange(e.target.value)} 
+            className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold"
+          >
             <option value="featured">Featured</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
@@ -119,23 +176,58 @@ function ShopPage() {
         <aside className="hidden lg:block">
           {loadingBrands ? <div className="text-sm text-muted-foreground">Loading filters...</div> : Filters}
         </aside>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-          {loadingProducts ? (
-            Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
-            ))
-          ) : fetchError ? (
-            <div className="col-span-full py-20 text-center">
-              <p className="text-destructive font-semibold">Failed to load products.</p>
-              <p className="text-sm text-muted-foreground mt-1">{fetchError.message}</p>
+        <div className="flex flex-col gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+            {loadingProducts ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
+              ))
+            ) : fetchError ? (
+              <div className="col-span-full py-20 text-center">
+                <p className="text-destructive font-semibold">Failed to load products.</p>
+                <p className="text-sm text-muted-foreground mt-1">{fetchError.message}</p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="col-span-full py-20 text-center">
+                <p className="text-muted-foreground">No products found in the database.</p>
+                <p className="text-xs text-muted-foreground mt-2">Please add products via the Admin panel.</p>
+              </div>
+            ) : (
+              products.map((p) => <ProductCard key={p.id} p={p} />)
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {!loadingProducts && products.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 py-6">
+              <button 
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border bg-card text-sm font-semibold hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="size-4" /> Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
+                  <button 
+                    key={pNum}
+                    onClick={() => handlePageChange(pNum)}
+                    className={`size-9 rounded-lg text-sm font-bold transition-colors ${page === pNum ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  >
+                    {pNum}
+                  </button>
+                ))}
+              </div>
+
+              <button 
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === totalPages}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border bg-card text-sm font-semibold hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next <ChevronRight className="size-4" />
+              </button>
             </div>
-          ) : list.length === 0 ? (
-            <div className="col-span-full py-20 text-center">
-              <p className="text-muted-foreground">No products found in the database.</p>
-              <p className="text-xs text-muted-foreground mt-2">Please add products via the Admin panel.</p>
-            </div>
-          ) : (
-            list.map((p) => <ProductCard key={p.id} p={p} />)
           )}
         </div>
       </div>
