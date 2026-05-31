@@ -113,6 +113,23 @@ function ProductPage() {
     },
   });
 
+  // Check if user has already reviewed this product
+  const { data: hasReviewedProduct } = useQuery({
+    queryKey: ["user-has-reviewed-product", user?.id, p.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase
+        .from("product_reviews" as any)
+        .select("id")
+        .eq("product_id", p.id)
+        .eq("user_id", user.id)
+        .limit(1);
+      if (error) return false;
+      return (data && data.length > 0);
+    },
+    enabled: !!user,
+  });
+
   // Check if user has purchased this product
   const { data: hasPurchasedProduct } = useQuery({
     queryKey: ["user-has-purchased-product", user?.id, p.id],
@@ -217,6 +234,7 @@ function ProductPage() {
   async function handleReviewSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return toast.error("You must be logged in to leave a review.");
+    if (hasReviewedProduct) return toast.error("You have already reviewed this product.");
     if (!reviewComment.trim()) return toast.error("Please write a comment.");
 
     setIsSubmittingReview(true);
@@ -246,6 +264,7 @@ function ProductPage() {
       setReviewComment("");
       setReviewRating(5);
       qc.invalidateQueries({ queryKey: ["product-reviews-list", p.id] });
+      qc.invalidateQueries({ queryKey: ["user-has-reviewed-product", user.id, p.id] });
     } catch (error: any) {
       toast.error("Failed to submit review: " + error.message);
     } finally {
@@ -416,7 +435,11 @@ function ProductPage() {
             <div className="max-w-3xl space-y-8">
               {/* Write a Review Section */}
               {user ? (
-                hasPurchasedProduct ? (
+                hasReviewedProduct ? (
+                  <div className="bg-muted/40 border border-border/50 rounded-2xl p-5 text-center text-sm text-muted-foreground">
+                    You have already submitted a review for this product. Only one review per customer is allowed.
+                  </div>
+                ) : hasPurchasedProduct ? (
                   <div className="bg-primary-soft/50 border border-primary/10 rounded-2xl p-5 sm:p-6 space-y-4">
                     <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
                       <MessageSquare className="size-4" /> Share Your Experience
