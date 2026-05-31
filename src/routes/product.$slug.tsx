@@ -119,18 +119,33 @@ function ProductPage() {
     queryFn: async () => {
       if (!user) return false;
 
-      // 1. Get all delivered orders belonging to this user
-      const { data: orders, error: ordersError } = await supabase
-        .from("orders")
+      // 1. Get customer profile to link orders back to the auth user
+      const { data: profile } = await supabase
+        .from("customers")
         .select("id")
         .eq("user_id", user.id)
+        .maybeSingle();
+
+      // 2. Query delivered orders matching either customer_id or customer_email
+      let query = supabase
+        .from("orders")
+        .select("id")
         .eq("status", "delivered");
 
+      if (profile?.id) {
+        query = query.or(`customer_id.eq.${profile.id},customer_email.eq.${user.email}`);
+      } else if (user.email) {
+        query = query.eq("customer_email", user.email);
+      } else {
+        return false;
+      }
+
+      const { data: orders, error: ordersError } = await query;
       if (ordersError || !orders || orders.length === 0) return false;
 
       const orderIds = orders.map(o => o.id);
 
-      // 2. See if any of those orders contained this product
+      // 3. Check if any of those delivered orders contain the current product
       const { data: items, error: itemsError } = await supabase
         .from("order_items")
         .select("id")
