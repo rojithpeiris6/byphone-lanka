@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, ShoppingBag, X, ShieldCheck, Truck } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useCart, getProduct, formatLKR } from "@/lib/shop";
+import { useCart, formatLKR } from "@/lib/shop";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -12,7 +12,36 @@ export function CartDrawer() {
   const items = useCart((s) => s.items);
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
-  const subtotal = useCart((s) => s.subtotal());
+  
+  const { data: dbProducts } = useQuery({
+    queryKey: ["cart-drawer-products", items],
+    queryFn: async () => {
+      if (items.length === 0) return [];
+      const ids = items.map(i => i.productId);
+      const { data } = await supabase.from("products").select(`*, product_images(url)`).in("id", ids);
+      return (data ?? []).map(p => ({ ...p, image: p.product_images?.[0]?.url || "" }));
+    },
+  });
+
+  const subtotal = useQuery({
+    queryKey: ["cart-drawer-subtotal", items, dbProducts],
+    queryFn: async () => {
+      if (!dbProducts || items.length === 0) return 0;
+      let total = 0;
+      for (const item of items) {
+        const product = dbProducts.find(p => p.id === item.productId);
+        if (!product) continue;
+        let price = product.discount_price || product.price;
+        if (item.variantId) {
+          const { data: variant } = await supabase.from("product_variants").select("price_diff").eq("id", item.variantId).single();
+          if (variant) price += variant.price_diff;
+        }
+        total += price * item.qty;
+      }
+      return total;
+    },
+  }).data ?? 0;
+
   const count = items.reduce((a, b) => a + b.qty, 0);
 
   const FREE_SHIPPING = 50000;
@@ -81,7 +110,7 @@ export function CartDrawer() {
           <>
             <ul className="flex-1 overflow-y-auto divide-y divide-border">
               {items.map((it) => {
-                const p = getProduct(it.productId);
+                const p = dbProducts?.find(prod => prod.id === it.productId);
                 if (!p) return null;
                 return (
                   <VariantItem key={`${it.productId}-${it.variantId}`} item={it} product={p} close={close} setQty={setQty} remove={remove} />
@@ -135,7 +164,7 @@ function VariantItem({ item, product, close, setQty, remove }: any) {
     enabled: !!variantId,
   });
 
-  const finalPrice = product.price + (variant?.price_diff || 0);
+  const finalPrice = (product.discount_price || product.price) + (variant?.price_diff || 0);
   const variantLabel = variant ? [variant.storage, variant.color, variant.ram, variant.network].filter(Boolean).join(" / ") : "";
 
   return (
@@ -149,7 +178,7 @@ function VariantItem({ item, product, close, setQty, remove }: any) {
         <img src={product.image} alt={product.name} className="h-full w-full object-contain p-1.5" />
       </Link>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{product.brand}</p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Store Product</p>
         <Link
           to="/product/$slug"
           params={{ slug: product.slug }}
