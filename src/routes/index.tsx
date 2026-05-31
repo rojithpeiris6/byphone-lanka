@@ -71,7 +71,8 @@ function Home() {
         .select(`
           *,
           brands(name),
-          categories!products_category_id_fkey(name)
+          categories!products_category_id_fkey(name),
+          product_images(url)
         `)
         .eq("status", "active")
         .order("created_at", { ascending: false })
@@ -83,6 +84,7 @@ function Home() {
         ...p,
         brand: p.brands?.name || "Unknown Brand",
         category: p.categories?.name || "General",
+        image: p.product_images?.[0]?.url || "",
         oldPrice: p.discount_price ? p.price : undefined,
         price: p.discount_price || p.price,
       }));
