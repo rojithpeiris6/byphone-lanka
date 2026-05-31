@@ -123,10 +123,16 @@ function ProductPage() {
   }, [p.price, selectedVariant]);
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity <= 0 : false;
+  const hasVariants = p.variants && p.variants.length > 0;
+  const isAddDisabled = isOutOfStock || (hasVariants && !selectedVariantId);
 
   const related = products.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
 
   function handleAdd() {
+    if (hasVariants && !selectedVariantId) {
+      toast.error("Please select a configuration before adding to cart");
+      return;
+    }
     add(p.id, selectedVariantId, qty);
     toast.success("Added to cart", { description: `${qty} × ${p.name}${selectedVariant ? ` (${selectedVariant.storage || selectedVariant.color || 'Variant'})` : ''}` });
   }
@@ -202,7 +208,7 @@ function ProductPage() {
             </p>
           </div>
 
-          {p.variants && p.variants.length > 0 && (
+          {hasVariants && (
             <div className="mt-6">
               <p className="text-sm mb-3"><span className="font-semibold">Select Configuration:</span> <span className="text-muted-foreground">{selectedVariant ? variantLabel(selectedVariant) : "Please choose one"}</span></p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -243,10 +249,11 @@ function ProductPage() {
           <div className="hidden lg:flex mt-6 gap-3">
             <button 
               onClick={handleAdd} 
-              disabled={isOutOfStock || (!p.variants?.length && isOutOfStock)}
+              disabled={isAddDisabled}
               className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ShoppingCart className="size-5" /> ADD TO CART
+              <ShoppingCart className="size-5" /> 
+              {hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART"}
             </button>
             <button 
               onClick={toggleWishlist}
@@ -331,10 +338,11 @@ function ProductPage() {
           </div>
           <button 
             onClick={handleAdd} 
-            disabled={isOutOfStock}
+            disabled={isAddDisabled}
             className="flex-1 bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <ShoppingCart className="size-4" /> ADD TO CART
+            <ShoppingCart className="size-4" /> 
+            {hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART"}
           </button>
         </div>
       </div>
