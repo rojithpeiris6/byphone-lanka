@@ -5,11 +5,13 @@ import { X, Mail, Lock, User, Phone, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useNavigate } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 
 type AuthMode = 'login' | 'register';
 
 export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [step, setStep] = useState(1);
@@ -36,6 +38,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
     } else {
       toast.success("Welcome back!");
       onOpenChange(false);
+      navigate({ to: '/account' });
     }
   }
 
@@ -60,8 +63,9 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success("Account created! Please check your email for verification.");
+      toast.success("Account created successfully!");
       onOpenChange(false);
+      navigate({ to: '/account' });
     }
   }
 
