@@ -1,12 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, RotateCcw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { RotateCcw } from 'lucide-react';
+
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+};
 
 type ShopFiltersProps = {
   brands: string[];
-  categories: { name: string; slug: string }[];
+  categories: Category[];
   activeBrand?: string;
   activeCategory?: string;
   minPrice?: number;
@@ -25,11 +31,24 @@ export function ShopFilters({
 }: ShopFiltersProps) {
   const [localMinPrice, setLocalMinPrice] = useState(minPrice || "");
   const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice || "");
+  const [selectedParentId, setSelectedParentId] = useState<string>("");
 
   useEffect(() => {
     setLocalMinPrice(minPrice || "");
     setLocalMaxPrice(maxPrice || "");
-  }, [minPrice, maxPrice]);
+    
+    // If activeCategory is set, try to find its parent to pre-set the parent select
+    if (activeCategory) {
+      const cat = categories.find(c => c.name === activeCategory);
+      if (cat?.parent_id) {
+        setSelectedParentId(cat.parent_id);
+      } else {
+        setSelectedParentId("");
+      }
+    } else {
+      setSelectedParentId("");
+    }
+  }, [minPrice, maxPrice, activeCategory, categories]);
 
   const handlePriceApply = () => {
     onFilterChange({
@@ -47,9 +66,30 @@ export function ShopFilters({
     });
     setLocalMinPrice("");
     setLocalMaxPrice("");
+    setSelectedParentId("");
   };
 
   const selectCls = "w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none transition-all";
+
+  const parentCategories = categories.filter(c => c.parent_id === null);
+  const childCategories = categories.filter(c => c.parent_id === selectedParentId);
+
+  const handleParentChange = (parentId: string) => {
+    setSelectedParentId(parentId);
+    if (!parentId) {
+      onFilterChange({ category: undefined });
+    } else {
+      // When a parent is selected, we can either filter by the parent itself 
+      // or wait for the user to pick a sub-category. Usually, selecting the parent 
+      // should show all products in that parent and its children.
+      const parent = categories.find(c => c.id === parentId);
+      onFilterChange({ category: parent?.name });
+    }
+  };
+
+  const handleChildChange = (categoryName: string) => {
+    onFilterChange({ category: categoryName || undefined });
+  };
 
   return (
     <div className="space-y-8">
@@ -66,18 +106,36 @@ export function ShopFilters({
       {/* Categories Section */}
       <div className="space-y-3">
         <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Categories</h4>
-        <select 
-          value={activeCategory || ""} 
-          onChange={(e) => onFilterChange({ category: e.target.value || undefined })} 
-          className={selectCls}
-        >
-          <option value="">All Categories</option>
-          {categories.map((cat) => (
-            <option key={cat.slug} value={cat.name}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
+        
+        <div className="space-y-2">
+          <select 
+            value={selectedParentId} 
+            onChange={(e) => handleParentChange(e.target.value)} 
+            className={selectCls}
+          >
+            <option value="">All Categories</option>
+            {parentCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          {selectedParentId && (
+            <select 
+              value={activeCategory || ""} 
+              onChange={(e) => handleChildChange(e.target.value)} 
+              className={cn(selectCls, "bg-primary-soft/30 border-primary/20 animate-in slide-in-from-top-2 duration-200")}
+            >
+              <option value="">All in {parentCategories.find(c => c.id === selectedParentId)?.name}</option>
+              {childCategories.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {/* Brands Section */}
@@ -130,4 +188,8 @@ export function ShopFilters({
       </div>
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }

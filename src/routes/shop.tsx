@@ -111,13 +111,13 @@ function ShopPage() {
     },
   });
 
-  // Fetch Categories from DB
+  // Fetch Categories from DB including id and parent_id
   const { data: dbCategories, isLoading: loadingCategories } = useQuery({
     queryKey: ["shop-categories"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("name, slug")
+        .select("id, name, slug, parent_id")
         .eq("status", "active")
         .order("sort_order");
       if (error) throw error;
