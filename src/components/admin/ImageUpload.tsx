@@ -41,11 +41,11 @@ export function ImageUpload({ value, onChange, bucket = "shop", label }: ImageUp
   return (
     <div className="space-y-2">
       {label && <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block">{label}</label>}
-      
+
       {value ? (
         <div className="relative group aspect-video sm:aspect-square w-full max-w-[200px] rounded-xl overflow-hidden border border-border bg-muted">
           <img src={value} alt="Uploaded" className="size-full object-cover" />
-          <button 
+          <button
             onClick={() => onChange(null)}
             className="absolute top-2 right-2 size-8 rounded-full bg-black/60 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity"
           >

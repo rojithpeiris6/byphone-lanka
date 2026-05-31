@@ -154,7 +154,7 @@ function BrandModal({ brand, onClose, onSave }: { brand: Brand; onClose: () => v
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <ImageUpload label="Brand Logo" value={form.logo} onChange={(url) => set("logo", url)} />
+            <ImageUpload label="Brand Logo" value={form.logo} bucket="brands" onChange={(url) => set("logo", url)} />
           </div>
           <div><label className={labelCls}>Name *</label><input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
           <div><label className={labelCls}>Slug *</label><input className={inputCls} value={form.slug} onChange={(e) => set("slug", e.target.value)} /></div>

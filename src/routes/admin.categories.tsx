@@ -166,7 +166,7 @@ function CategoryModal({ category, allCategories, onClose, onSave }: { category:
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <ImageUpload label="Category Image" value={form.image} onChange={(url) => set("image", url)} />
+            <ImageUpload label="Category Image" value={form.image} bucket="categories" onChange={(url) => set("image", url)} />
           </div>
           <div><label className={labelCls}>Name *</label><input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
           <div><label className={labelCls}>Slug *</label><input className={inputCls} value={form.slug} onChange={(e) => set("slug", e.target.value)} /></div>
