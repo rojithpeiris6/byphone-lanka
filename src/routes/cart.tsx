@@ -43,12 +43,12 @@ function CartPage() {
             const p = getProduct(i.id)!;
             return (
               <div key={i.id} className="rounded-2xl border border-border bg-card p-4 flex gap-4">
-                <Link to="/product/$id" params={{ id: p.id }} className="size-20 sm:size-28 rounded-xl bg-muted/40 shrink-0 overflow-hidden">
+                <Link to="/product/$slug" params={{ slug: p.slug }} className="size-20 sm:size-28 rounded-xl bg-muted/40 shrink-0 overflow-hidden">
                   <img src={p.image} alt={p.name} className="h-full w-full object-contain p-2" />
                 </Link>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] uppercase font-semibold text-muted-foreground">{p.brand}</p>
-                  <Link to="/product/$id" params={{ id: p.id }} className="text-sm sm:text-base font-semibold leading-tight line-clamp-2 hover:text-primary">{p.name}</Link>
+                  <Link to="/product/$slug" params={{ slug: p.slug }} className="text-sm sm:text-base font-semibold leading-tight line-clamp-2 hover:text-primary">{p.name}</Link>
                   <p className="mt-1 text-primary font-extrabold">{formatLKR(p.price)}</p>
                   <div className="mt-3 flex items-center justify-between">
                     <div className="inline-flex items-center border border-border rounded-xl">

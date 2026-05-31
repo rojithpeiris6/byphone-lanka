@@ -13,12 +13,12 @@ export function ProductCard({ p }: { p: Product }) {
       <button aria-label="Wishlist" className="absolute top-3 right-3 z-10 size-8 grid place-items-center rounded-full bg-background/80 backdrop-blur border border-border text-muted-foreground hover:text-primary">
         <Heart className="size-4" />
       </button>
-      <Link to="/product/$id" params={{ id: p.id }} className="aspect-square rounded-xl bg-muted/50 grid place-items-center overflow-hidden">
+      <Link to="/product/$slug" params={{ slug: p.slug }} className="aspect-square rounded-xl bg-muted/50 grid place-items-center overflow-hidden">
         <img src={p.image} alt={p.name} loading="lazy" width={400} height={400} className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105" />
       </Link>
       <div className="mt-3 flex-1 flex flex-col">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{p.brand}</p>
-        <Link to="/product/$id" params={{ id: p.id }} className="mt-0.5 text-sm sm:text-[15px] font-semibold leading-snug line-clamp-2 hover:text-primary">
+        <Link to="/product/$slug" params={{ slug: p.slug }} className="mt-0.5 text-sm sm:text-[15px] font-semibold leading-snug line-clamp-2 hover:text-primary">
           {p.name}
         </Link>
         <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">

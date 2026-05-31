@@ -84,8 +84,8 @@ export function CartDrawer() {
                 return (
                   <li key={it.id} className="flex gap-3 p-4">
                     <Link
-                      to="/product/$id"
-                      params={{ id: p.id }}
+                      to="/product/$slug"
+                      params={{ slug: p.slug }}
                       onClick={close}
                       className="size-20 rounded-xl bg-muted/50 shrink-0 overflow-hidden grid place-items-center"
                     >
@@ -94,8 +94,8 @@ export function CartDrawer() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{p.brand}</p>
                       <Link
-                        to="/product/$id"
-                        params={{ id: p.id }}
+                        to="/product/$slug"
+                        params={{ slug: p.slug }}
                         onClick={close}
                         className="block text-sm font-semibold leading-snug line-clamp-2 hover:text-primary"
                       >

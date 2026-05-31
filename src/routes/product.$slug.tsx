@@ -1,15 +1,36 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2 } from "lucide-react";
-import { getProduct, products, formatLKR, useCart, type Product } from "@/lib/shop";
+import { products, formatLKR, useCart, type Product } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    const p = getProduct(params.id);
-    if (!p) throw notFound();
-    return { product: p };
+export const Route = createFileRoute("/product/$slug")({
+  loader: async ({ params }) => {
+    const { data: product, error } = await supabase
+      .from("products")
+      .select(`
+        *,
+        brands(name),
+        categories!products_category_id_fkey(name),
+        product_images(url)
+      `)
+      .eq("slug", params.slug)
+      .single();
+
+    if (error || !product) throw notFound();
+
+    return { 
+      product: {
+        ...product,
+        brand: product.brands?.name || "Unknown Brand",
+        category: product.categories?.name || "General",
+        image: product.product_images?.[0]?.url || "",
+        oldPrice: product.discount_price ? product.price : undefined,
+        price: product.discount_price || product.price,
+      } as Product
+    };
   },
   head: ({ loaderData }) => {
     const p = loaderData?.product;
@@ -21,7 +42,7 @@ export const Route = createFileRoute("/product/$id")({
         { property: "og:type", content: "product" },
         { property: "og:image", content: p?.image ?? "" },
       ],
-      links: [{ rel: "canonical", href: `/product/${p?.id}` }],
+      links: [{ rel: "canonical", href: `/product/${p?.slug}` }],
     };
   },
   component: ProductPage,
@@ -35,7 +56,8 @@ function ProductPage() {
   const [color, setColor] = useState(p.colors?.[0]);
   const [tab, setTab] = useState<"specs" | "desc" | "reviews" | "warranty">("specs");
 
-  const related = products.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 5);
+  // Simplified related products fetch using mock data for now, or could be converted to DB
+  const related = products.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
 
   function handleAdd() {
     add(p.id, qty);

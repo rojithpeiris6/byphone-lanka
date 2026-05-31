@@ -12,6 +12,7 @@ import charger from "@/assets/cat-charger.jpg";
 
 export type Product = {
   id: string;
+  slug: string;
   brand: string;
   name: string;
   price: number;
@@ -31,6 +32,7 @@ export type Product = {
 export const products: Product[] = [
   {
     id: "iphone-15-pro-256",
+    slug: "iphone-15-pro-256gb",
     brand: "Apple", name: "iPhone 15 Pro 256GB",
     price: 499999, oldPrice: 529999, rating: 4.8, reviews: 128,
     image: iphone15pro, category: "Smartphones", badge: "NEW",
@@ -62,6 +64,7 @@ export const products: Product[] = [
   },
   {
     id: "galaxy-s24-ultra-256",
+    slug: "galaxy-s24-ultra-5g-256gb",
     brand: "Samsung", name: "Galaxy S24 Ultra 5G 256GB",
     price: 399999, oldPrice: 449999, rating: 4.7, reviews: 96,
     image: s24ultra, category: "Smartphones", badge: "-11%",
@@ -70,6 +73,7 @@ export const products: Product[] = [
   },
   {
     id: "oneplus-12-256",
+    slug: "oneplus-12-5g-256gb",
     brand: "OnePlus", name: "OnePlus 12 5G 256GB",
     price: 279999, rating: 4.6, reviews: 64,
     image: oneplus12, category: "Smartphones",
@@ -78,42 +82,49 @@ export const products: Product[] = [
   },
   {
     id: "xiaomi-14-256",
+    slug: "xiaomi-14-5g-256gb",
     brand: "Xiaomi", name: "Xiaomi 14 5G 256GB",
     price: 239999, rating: 4.5, reviews: 41,
     image: xiaomi14, category: "Smartphones",
   },
   {
     id: "nothing-2-256",
+    slug: "nothing-phone-2-12gb-256gb",
     brand: "Nothing", name: "Nothing Phone (2) 12GB / 256GB",
     price: 189999, rating: 4.6, reviews: 88,
     image: nothing2, category: "Smartphones",
   },
   {
     id: "airpods-pro-2",
+    slug: "airpods-pro-2nd-gen-usb-c",
     brand: "Apple", name: "AirPods Pro (2nd Gen) USB-C",
     price: 79999, rating: 4.8, reviews: 312,
     image: earbuds, category: "Earbuds",
   },
   {
     id: "apple-watch-s9",
+    slug: "apple-watch-series-9-45mm",
     brand: "Apple", name: "Apple Watch Series 9 45mm",
     price: 139999, rating: 4.7, reviews: 152,
     image: watch, category: "Smartwatches",
   },
   {
     id: "ipad-pro-m4",
+    slug: "ipad-pro-m4-11-256gb",
     brand: "Apple", name: 'iPad Pro M4 11" 256GB',
     price: 349999, rating: 4.9, reviews: 73,
     image: tablet, category: "Tablets",
   },
   {
     id: "case-iphone-15",
+    slug: "silicone-case-iphone-15",
     brand: "byphone", name: "Silicone Case for iPhone 15",
     price: 4990, rating: 4.4, reviews: 220,
     image: cases, category: "Cases",
   },
   {
     id: "charger-20w",
+    slug: "20w-usb-c-power-adapter",
     brand: "Apple", name: "20W USB-C Power Adapter",
     price: 6990, rating: 4.6, reviews: 410,
     image: charger, category: "Chargers",
