@@ -128,7 +128,7 @@ function AccountPage() {
               onSave={handleUpdateProfile}
             />
           )}
-          {activeTab === 'orders' && <OrdersView userEmail={user.email ?? ""} />}
+          {activeTab === 'orders' && <OrdersView userId={user.id} userEmail={user.email ?? ""} />}
           {activeTab === 'wishlist' && <WishlistView userId={user.id} />}
         </div>
       </div>
@@ -204,15 +204,23 @@ function ProfileView({ profile, isLoading, isEditing, setIsEditing, editForm, se
   );
 }
 
-function OrdersView({ userEmail }: { userEmail: string }) {
+function OrdersView({ userId, userEmail }: { userId: string; userEmail: string }) {
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["customer-orders", userEmail],
+    queryKey: ["customer-orders", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("orders")
         .select("*")
-        .eq("customer_email", userEmail)
         .order("created_at", { ascending: false });
+      
+      // Filter by user_id if available, otherwise fallback to email for guest orders
+      if (userId) {
+        query = query.or(`user_id.eq.${userId},customer_email.eq.${userEmail}`);
+      } else {
+        query = query.eq("customer_email", userEmail);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },

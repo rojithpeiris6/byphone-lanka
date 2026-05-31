@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client";
 
 const orderSchema = z.object({
   customer: z.object({
@@ -25,6 +26,10 @@ export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator(orderSchema)
   .handler(async ({ data }) => {
     const { customer, shippingMethod, paymentMethod, items } = data;
+
+    // Get the currently authenticated user if available
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || null;
 
     // 1. Calculate totals, validate stock and fetch current prices
     let subtotal = 0;
@@ -87,11 +92,12 @@ export const placeOrder = createServerFn({ method: "POST" })
     const total = subtotal + shippingFee;
     const orderNumber = `BP-${Math.floor(10000 + Math.random() * 90000)}-${Date.now().toString().slice(-4)}`;
 
-    // 2. Create the Order record
+    // 2. Create the Order record (including user_id for authenticated users)
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
       .insert({
         order_number: orderNumber,
+        user_id: userId,
         customer_name: customer.name,
         customer_email: customer.email,
         customer_phone: customer.phone,
