@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { LogOut, User, Mail, Phone, Package, ShoppingBag, Heart, Save, X, ArrowRight } from "lucide-react";
+import { LogOut, User, Mail, Phone, Package, ShoppingBag, Heart, Save, X, ArrowRight, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { ProductCard } from "@/components/ProductCard";
 import { formatLKR, useCart } from "@/lib/shop";
@@ -368,6 +368,3 @@ function Navigate({ to }: { to: string }) {
   useEffect(() => { navigate({ to }); }, [navigate, to]);
   return null;
 }
-
-import { useEffect } from "react";
-import { Mail, MapPin } from "lucide-react";
