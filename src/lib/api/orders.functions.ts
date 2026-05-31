@@ -35,7 +35,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       // Fetch product with current stock
       const { data: product, error: pError } = await supabaseAdmin
         .from("products")
-        .select("price, name, sku, stock_quantity")
+        .select("id, price, name, sku, stock_quantity")
         .eq("id", item.productId)
         .single();
 
@@ -52,10 +52,10 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (item.variantId) {
         const { data: variant } = await supabaseAdmin
           .from("product_variants")
-          .select("price_diff, stock_quantity")
+          .select("id, price_diff, stock_quantity")
           .eq("id", item.variantId)
           .single();
-        
+
         if (variant) {
           unitPrice += variant.price_diff;
           // Variant stock check
@@ -88,7 +88,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const orderNumber = `BP-${Math.floor(10000 + Math.random() * 90000)}-${Date.now().toString().slice(-4)}`;
 
     // 2. Create the Order record
-    const { data: order, error: orderError } = await supabaseAdmin
+    const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
       .insert({
         order_number: orderNumber,
@@ -117,7 +117,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       order_id: order.id,
     }));
 
-    const { error: itemsError } = await supabaseAdmin
+    const { error: itemsError } = await (supabaseAdmin as any)
       .from("order_items")
       .insert(itemsWithOrderId);
 
@@ -128,7 +128,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     // 4. Decrement Stock
     for (const update of stockUpdates) {
       const table = update.table === 'products' ? 'products' : 'product_variants';
-      
+
       const { data: current } = await supabaseAdmin
         .from(table)
         .select("stock_quantity")

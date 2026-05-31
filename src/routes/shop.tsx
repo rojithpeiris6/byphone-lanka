@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ShopFilters } from "@/components/shop/ShopFilters";
 
 const PAGE_SIZE = 12;
 
@@ -13,6 +14,9 @@ export const Route = createFileRoute("/shop")({
   validateSearch: z.object({
     page: z.number().catch(1),
     brand: z.string().optional(),
+    category: z.string().optional(),
+    minPrice: z.number().optional(),
+    maxPrice: z.number().optional(),
     sort: z.string().optional().catch("featured"),
   }),
   head: () => ({
@@ -28,19 +32,18 @@ export const Route = createFileRoute("/shop")({
 });
 
 function ShopPage() {
-  const { brand, page, sort } = Route.useSearch();
+  const { brand, category, minPrice, maxPrice, page, sort } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
 
-  // Fetch Products from DB with pagination and sorting
+  // Fetch Products from DB with pagination, sorting and advanced filters
   const { data: dbData, isLoading: loadingProducts, error: fetchError } = useQuery({
-    queryKey: ["shop-products", page, brand, sort],
+    queryKey: ["shop-products", page, brand, category, minPrice, maxPrice, sort],
     queryFn: async () => {
-      // Map sort values to DB columns
       const sortMap: Record<string, { column: string; ascending: boolean }> = {
         "price-asc": { column: "price", ascending: true },
         "price-desc": { column: "price", ascending: false },
-        "rating": { column: "created_at", ascending: false }, // fallback since rating isn't in DB schema
+        "rating": { column: "created_at", ascending: false },
         "featured": { column: "created_at", ascending: false },
       };
       const activeSort = sortMap[sort || "featured"] || sortMap["featured"];
@@ -58,8 +61,16 @@ function ShopPage() {
         .order(activeSort.column, { ascending: activeSort.ascending });
 
       if (brand) {
-        // Filter using the joined table name
         query = query.eq("brands.name", brand);
+      }
+      if (category) {
+        query = query.eq("categories.name", category);
+      }
+      if (minPrice !== undefined) {
+        query = query.gte("price", minPrice);
+      }
+      if (maxPrice !== undefined) {
+        query = query.lte("price", maxPrice);
       }
 
       const { data, error, count } = await query;
@@ -100,13 +111,31 @@ function ShopPage() {
     },
   });
 
+  // Fetch Categories from DB
+  const { data: dbCategories, isLoading: loadingCategories } = useQuery({
+    queryKey: ["shop-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, slug")
+        .eq("status", "active")
+        .order("sort_order");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const products = dbData?.products ?? [];
   const totalCount = dbData?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  const handleFilterChange = (newBrand: string | undefined) => {
+  const handleFilterChange = (filters: { brand?: string; category?: string; minPrice?: number; maxPrice?: number }) => {
     navigate({
-      search: (prev) => ({ ...prev, brand: newBrand, page: 1 }),
+      search: (prev) => ({ 
+        ...prev, 
+        ...filters,
+        page: 1 
+      }),
     });
   };
 
@@ -122,29 +151,16 @@ function ShopPage() {
     });
   };
 
-  const Filters = (
-    <div className="space-y-6">
-      <div>
-        <h4 className="text-sm font-bold mb-3">Brand</h4>
-        <div className="space-y-2">
-          <button 
-            onClick={() => handleFilterChange(undefined)} 
-            className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (!brand ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}
-          >
-            All Brands
-          </button>
-          {dbBrands?.map((b) => (
-            <button 
-              key={b} 
-              onClick={() => handleFilterChange(b)} 
-              className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (brand === b ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}
-            >
-              {b}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+  const FiltersUI = (
+    <ShopFilters 
+      brands={dbBrands ?? []} 
+      categories={dbCategories ?? []} 
+      activeBrand={brand} 
+      activeCategory={category}
+      minPrice={minPrice}
+      maxPrice={maxPrice}
+      onFilterChange={handleFilterChange}
+    />
   );
 
   return (
@@ -172,9 +188,11 @@ function ShopPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[240px_1fr] gap-8">
+      <div className="grid lg:grid-cols-[260px_1fr] gap-8">
         <aside className="hidden lg:block">
-          {loadingBrands ? <div className="text-sm text-muted-foreground">Loading filters...</div> : Filters}
+          {(loadingBrands || loadingCategories) ? (
+            <div className="text-sm text-muted-foreground">Loading filters...</div>
+          ) : FiltersUI}
         </aside>
         <div className="flex flex-col gap-8">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
@@ -189,8 +207,13 @@ function ShopPage() {
               </div>
             ) : products.length === 0 ? (
               <div className="col-span-full py-20 text-center">
-                <p className="text-muted-foreground">No products found in the database.</p>
-                <p className="text-xs text-muted-foreground mt-2">Please add products via the Admin panel.</p>
+                <p className="text-muted-foreground">No products found matching your filters.</p>
+                <button 
+                  onClick={() => handleFilterChange({ brand: undefined, category: undefined, minPrice: undefined, maxPrice: undefined })}
+                  className="mt-4 text-primary font-bold text-sm hover:underline"
+                >
+                  Clear all filters
+                </button>
               </div>
             ) : (
               products.map((p) => <ProductCard key={p.id} p={p} />)
@@ -240,7 +263,9 @@ function ShopPage() {
               <h3 className="text-lg font-extrabold">Filters</h3>
               <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-muted"><X className="size-5" /></button>
             </div>
-            {loadingBrands ? <div className="text-sm text-muted-foreground">Loading filters...</div> : Filters}
+            {(loadingBrands || loadingCategories) ? (
+              <div className="text-sm text-muted-foreground">Loading filters...</div>
+            ) : FiltersUI}
           </div>
         </div>
       )}
