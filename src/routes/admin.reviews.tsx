@@ -19,14 +19,16 @@ function ReviewsPage() {
     queryKey: ["admin-reviews", statusFilter],
     queryFn: async () => {
       let query = supabase
-        .from("product_reviews" as any)
+        .from("product_reviews")
         .select(`
           *,
           products(name, sku, product_images(url))
         `)
         .order("created_at", { ascending: false });
       
-      if (statusFilter !== "all") query = query.eq("status", statusFilter);
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
       
       const { data, error } = await query;
       if (error) throw error;
@@ -42,43 +44,48 @@ function ReviewsPage() {
   );
 
   async function updateStatus(id: string, status: string) {
-    const loadingToast = toast.loading(`Updating review status...`);
+    const loadingToast = toast.loading(`Changing status to ${status}...`);
     
-    // We let the DB handle updated_at via trigger to avoid schema cache issues
-    const { error } = await supabase
-      .from("product_reviews" as any)
-      .update({ status })
-      .eq("id", id);
+    try {
+      const { error } = await supabase
+        .from("product_reviews")
+        .update({ status } as any)
+        .eq("id", id);
 
-    toast.dismiss(loadingToast);
-
-    if (error) {
+      if (error) throw error;
+      
+      toast.success(`Review successfully ${status}`, { id: loadingToast });
+      
+      // Force an immediate refetch of the list
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-reviews"] }),
+        refetch()
+      ]);
+    } catch (error: any) {
       console.error("Update error:", error);
-      return toast.error(`Failed to update review: ${error.message}`);
+      toast.error(`Failed to update status: ${error.message}`, { id: loadingToast });
     }
-    
-    toast.success(`Review ${status}`);
-    // Invalidate the root key to refresh all views
-    await qc.invalidateQueries({ queryKey: ["admin-reviews"] });
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to permanently delete this review?")) return;
     
     const loadingToast = toast.loading(`Deleting review...`);
-    const { error } = await supabase.from("product_reviews" as any).delete().eq("id", id);
-    toast.dismiss(loadingToast);
-
-    if (error) return toast.error(error.message);
-    
-    toast.success("Review deleted");
-    await qc.invalidateQueries({ queryKey: ["admin-reviews"] });
+    try {
+      const { error } = await supabase.from("product_reviews").delete().eq("id", id);
+      if (error) throw error;
+      
+      toast.success("Review deleted", { id: loadingToast });
+      await qc.invalidateQueries({ queryKey: ["admin-reviews"] });
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`, { id: loadingToast });
+    }
   }
 
   const stats = {
     total: reviews?.length ?? 0,
     pending: reviews?.filter((r: any) => r.status === 'pending').length ?? 0,
-    avg: reviews?.length ? (reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviews.length).toFixed(1) : "0",
+    avg: reviews?.length ? (reviews.reduce((acc: number, r: any) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1) : "0",
   };
 
   return (
@@ -139,7 +146,7 @@ function ReviewsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {isLoading && !isRefetching ? (
+              {(isLoading && !isRefetching) ? (
                 <tr><td colSpan={5} className="px-6 py-20 text-center text-muted-foreground">Loading reviews...</td></tr>
               ) : filtered.length === 0 ? (
                 <tr>
@@ -155,7 +162,7 @@ function ReviewsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="size-9 rounded-full bg-primary/10 text-primary grid place-items-center font-bold text-xs shrink-0">
-                          {r.customer_name?.slice(0, 1).toUpperCase()}
+                          {r.customer_name?.slice(0, 1).toUpperCase() || "U"}
                         </div>
                         <div>
                           <div className="font-semibold">{r.customer_name}</div>
@@ -165,8 +172,8 @@ function ReviewsPage() {
                     </td>
                     <td className="px-6 py-4 max-w-md">
                       <div className="flex gap-0.5 text-amber-400 mb-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={cn("size-3.5", i < r.rating ? "fill-amber-400" : "text-muted/40")} />
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star key={star} className={cn("size-3.5", star <= r.rating ? "fill-amber-400" : "text-muted/40")} />
                         ))}
                       </div>
                       <p className="text-xs text-foreground line-clamp-2 italic">"{r.comment}"</p>
@@ -174,7 +181,9 @@ function ReviewsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="size-8 rounded bg-muted overflow-hidden shrink-0">
-                          <img src={r.products?.product_images?.[0]?.url || ""} alt="" className="size-full object-contain" />
+                          {r.products?.product_images?.[0]?.url && (
+                            <img src={r.products.product_images[0].url} alt="" className="size-full object-contain" />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <div className="font-medium text-[11px] truncate">{r.products?.name}</div>
@@ -234,9 +243,13 @@ function ReviewsPage() {
 }
 
 function StatCard({ label, value, icon: Icon, color }: any) {
+  const bgColor = color === "text-primary" ? "bg-primary/10" : 
+                color === "text-amber-500" ? "bg-amber-500/10" : 
+                color === "text-amber-400" ? "bg-amber-400/10" : "bg-muted";
+                
   return (
     <div className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-      <div className={cn("size-12 rounded-xl bg-muted grid place-items-center shrink-0", color.replace('text-', 'bg-').replace('600', '100').replace('500', '100').replace('400', '100'))}>
+      <div className={cn("size-12 rounded-xl grid place-items-center shrink-0", bgColor)}>
         <Icon className={cn("size-6", color)} />
       </div>
       <div>
