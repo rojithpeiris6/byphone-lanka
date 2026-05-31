@@ -26,7 +26,6 @@ export function ShopFilters({
   const [localMinPrice, setLocalMinPrice] = useState(minPrice || "");
   const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice || "");
 
-  // Sync local price state when props change (e.g., when filters are cleared)
   useEffect(() => {
     setLocalMinPrice(minPrice || "");
     setLocalMaxPrice(maxPrice || "");
@@ -50,6 +49,8 @@ export function ShopFilters({
     setLocalMaxPrice("");
   };
 
+  const selectCls = "w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:border-primary outline-none transition-all";
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -65,57 +66,35 @@ export function ShopFilters({
       {/* Categories Section */}
       <div className="space-y-3">
         <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Categories</h4>
-        <div className="space-y-1">
-          <button 
-            onClick={() => onFilterChange({ category: undefined })} 
-            className={cn(
-              "block w-full text-left text-sm py-2 px-3 rounded-lg transition-colors",
-              !activeCategory ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted text-foreground/80"
-            )}
-          >
-            All Categories
-          </button>
+        <select 
+          value={activeCategory || ""} 
+          onChange={(e) => onFilterChange({ category: e.target.value || undefined })} 
+          className={selectCls}
+        >
+          <option value="">All Categories</option>
           {categories.map((cat) => (
-            <button 
-              key={cat.slug} 
-              onClick={() => onFilterChange({ category: cat.name })} 
-              className={cn(
-                "block w-full text-left text-sm py-2 px-3 rounded-lg transition-colors",
-                activeCategory === cat.name ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted text-foreground/80"
-              )}
-            >
+            <option key={cat.slug} value={cat.name}>
               {cat.name}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* Brands Section */}
       <div className="space-y-3">
         <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Brands</h4>
-        <div className="space-y-1">
-          <button 
-            onClick={() => onFilterChange({ brand: undefined })} 
-            className={cn(
-              "block w-full text-left text-sm py-2 px-3 rounded-lg transition-colors",
-              !activeBrand ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted text-foreground/80"
-            )}
-          >
-            All Brands
-          </button>
+        <select 
+          value={activeBrand || ""} 
+          onChange={(e) => onFilterChange({ brand: e.target.value || undefined })} 
+          className={selectCls}
+        >
+          <option value="">All Brands</option>
           {brands.map((brand) => (
-            <button 
-              key={brand} 
-              onClick={() => onFilterChange({ brand })} 
-              className={cn(
-                "block w-full text-left text-sm py-2 px-3 rounded-lg transition-colors",
-                activeBrand === brand ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted text-foreground/80"
-              )}
-            >
+            <option key={brand} value={brand}>
               {brand}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* Price Range Section */}
