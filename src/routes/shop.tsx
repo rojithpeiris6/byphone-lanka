@@ -104,7 +104,7 @@ function ShopPage() {
   const totalCount = dbData?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  const handleFilterChange = (newBrand: string | null) => {
+  const handleFilterChange = (newBrand: string | undefined) => {
     navigate({
       search: (prev) => ({ ...prev, brand: newBrand, page: 1 }),
     });
@@ -128,7 +128,7 @@ function ShopPage() {
         <h4 className="text-sm font-bold mb-3">Brand</h4>
         <div className="space-y-2">
           <button 
-            onClick={() => handleFilterChange(null)} 
+            onClick={() => handleFilterChange(undefined)} 
             className={"block w-full text-left text-sm py-1.5 px-3 rounded-lg " + (!brand ? "bg-primary-soft text-primary font-semibold" : "hover:bg-muted")}
           >
             All Brands
