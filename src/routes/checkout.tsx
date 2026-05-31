@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2 } from "lucide-react";
+import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2, Ticket } from "lucide-react";
 import { useCart, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
 import { placeOrder } from "@/lib/api/orders.functions";
+import { validateCoupon } from "@/lib/api/coupons.functions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,6 +33,10 @@ function Checkout() {
   const [delivery, setDelivery] = useState<"std" | "exp">("std");
   const [payment, setPayment] = useState("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [activeCoupon, setActiveCoupon] = useState<string | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   // 1. Fetch real-time product and variant data from DB
   const { data: cartData, isLoading: loadingProducts } = useQuery({
@@ -87,7 +92,8 @@ function Checkout() {
   }, [items, cartData]);
 
   const deliveryFee = delivery === "exp" ? 490 : 0;
-  const total = subtotal + deliveryFee;
+  const totalBeforeDiscount = subtotal + deliveryFee;
+  const finalTotal = Math.max(0, totalBeforeDiscount - appliedDiscount);
 
   const [form, setForm] = useState({
     name: "",
@@ -97,6 +103,28 @@ function Checkout() {
     city: "",
     district: "",
   });
+
+  async function handleApplyCoupon() {
+    if (!couponCode.trim()) return;
+    setIsValidatingCoupon(true);
+    try {
+      const result = await validateCoupon({
+        data: {
+          code: couponCode.trim(),
+          orderAmount: subtotal,
+        },
+      });
+      setAppliedDiscount(result.discount);
+      setActiveCoupon(result.couponCode);
+      toast.success(`Coupon applied! You saved ${formatLKR(result.discount)}`);
+    } catch (e: any) {
+      toast.error(e.message || "Invalid coupon code");
+      setAppliedDiscount(0);
+      setActiveCoupon(null);
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  }
 
   async function handlePlaceOrder() {
     const required = ["name", "phone", "email", "address", "city", "district"];
@@ -251,14 +279,45 @@ function Checkout() {
                 })
               )}
             </div>
-            <div className="mt-4 pt-4 border-t border-border space-y-2 text-sm">
+
+            <div className="mt-4 pt-4 border-t border-border space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatLKR(subtotal)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>{deliveryFee === 0 ? "Free" : formatLKR(deliveryFee)}</span></div>
+              
+              {activeCoupon && (
+                <div className="flex justify-between text-emerald-600 font-semibold">
+                  <span className="flex items-center gap-1">
+                    <Ticket className="size-3" /> Coupon: {activeCoupon}
+                  </span>
+                  <span>-{formatLKR(appliedDiscount)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between items-baseline pt-2 border-t border-border">
                 <span className="font-extrabold">Total</span>
-                <span className="text-2xl font-extrabold text-primary">{formatLKR(total)}</span>
+                <span className="text-2xl font-extrabold text-primary">{formatLKR(finalTotal)}</span>
               </div>
               <p className="text-[11px] text-muted-foreground">(Includes VAT)</p>
+            </div>
+
+            <div className="mt-5 p-3 rounded-xl bg-muted/50 border border-border space-y-2">
+              <label className="text-[11px] font-bold uppercase text-muted-foreground block">Promo Code</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter code" 
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" 
+                />
+                <button 
+                  onClick={handleApplyCoupon}
+                  disabled={isValidatingCoupon}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-primary-dark disabled:opacity-50 transition-colors"
+                >
+                  {isValidatingCoupon ? <Loader2 className="size-3 animate-spin" /> : "Apply"}
+                </button>
+              </div>
             </div>
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">

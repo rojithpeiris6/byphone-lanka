@@ -24,10 +24,17 @@ export function Header() {
   const openCart = useCart((s) => s.open);
   const { user } = useAuth();
   const openAuthModal = useAuthModalStore((s) => s.open);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    navigate({ to: '/search', search: { q: searchQuery.trim() } });
+  };
 
   const nav = [
     { to: "/", label: "Home" },
@@ -42,16 +49,28 @@ export function Header() {
     <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border">
       <AnnounceBar />
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-6">
-        <Link to="/" className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary">
+        <Link to="/" className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary shrink-0">
           byphone<span className="text-foreground">.lk</span>
         </Link>
+        
         <nav className="hidden lg:flex items-center gap-7 text-sm font-medium">
           {nav.map((n, i) => (
             <Link key={i} to={n.to} className="text-foreground/80 hover:text-primary transition-colors">{n.label}</Link>
           ))}
         </nav>
+
         <div className="flex items-center gap-1 sm:gap-2 text-foreground">
-          <button aria-label="Search" className="p-2 rounded-full hover:bg-secondary transition-colors"><Search className="size-5" /></button>
+          <form onSubmit={handleSearch} className="hidden md:flex relative items-center">
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="pl-9 pr-3 py-1.5 rounded-full bg-muted/60 border border-transparent focus:bg-background focus:border-border outline-none text-sm w-40 lg:w-64 transition-all"
+            />
+            <Search className="absolute left-3 size-4 text-muted-foreground" />
+          </form>
+          <button aria-label="Search" onClick={() => navigate({ to: '/search', search: { q: searchQuery } })} className="md:hidden p-2 rounded-full hover:bg-secondary transition-colors"><Search className="size-5" /></button>
           <button 
             aria-label="Account" 
             onClick={() => user ? navigate({ to: '/account' }) : openAuthModal()}
