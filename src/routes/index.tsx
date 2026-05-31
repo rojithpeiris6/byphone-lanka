@@ -53,6 +53,23 @@ function Home() {
     image: heroSettings?.image || heroDefault
   };
 
+  // Logic to split title at first dot and color the rest blue
+  const renderTitle = () => {
+    const title = heroContent.title;
+    const dotIndex = title.indexOf('.');
+    if (dotIndex === -1) return title;
+
+    const part1 = title.substring(0, dotIndex + 1);
+    const part2 = title.substring(dotIndex + 1);
+
+    return (
+      <>
+        {part1}
+        <span className="text-primary">{part2}</span>
+      </>
+    );
+  };
+
   // Helper to get active flash sale product IDs
   const { data: activeFlashSaleIds } = useQuery({
     queryKey: ["home-active-flash-sale-ids"],
@@ -201,7 +218,7 @@ function Home() {
                 <Sparkles className="size-3" /> NEW ARRIVAL
               </span>
               <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
-                {heroContent.title}
+                {renderTitle()}
               </h1>
               <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
                 {heroContent.description}
