@@ -34,7 +34,7 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
 }
 
 function Home() {
-  // Fetch Categories
+  // Fetch Parent Categories only
   const { data: dbCategories } = useQuery({
     queryKey: ["home-categories"],
     queryFn: async () => {
@@ -42,6 +42,7 @@ function Home() {
         .from("categories")
         .select("name, image, slug")
         .eq("status", "active")
+        .is("parent_id", null) // Only fetch parent categories
         .order("sort_order");
       if (error) throw error;
       return data ?? [];
