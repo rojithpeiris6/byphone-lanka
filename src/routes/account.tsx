@@ -409,7 +409,7 @@ function WishlistView({ userId }: { userId: string }) {
   const { data: wishlist, isLoading } = useQuery({
     queryKey: ["customer-wishlist", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("wishlist")
         .select("*, products(*, product_images(url))")
         .eq("user_id", userId);
@@ -419,7 +419,7 @@ function WishlistView({ userId }: { userId: string }) {
   });
 
   async function remove(id: string) {
-    const { error } = await supabase.from("wishlist").delete().eq("id", id);
+    const { error } = await (supabase as any).from("wishlist").delete().eq("id", id);
     if (error) return toast.error("Could not remove item");
     toast.success("Removed from wishlist");
     qc.invalidateQueries({ queryKey: ["customer-wishlist"] });
@@ -441,7 +441,7 @@ function WishlistView({ userId }: { userId: string }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {wishlist?.map((item) => {
+          {wishlist?.map((item: any) => {
             const p = item.products as any;
             return (
               <div key={item.id} className="group relative bg-card rounded-3xl border border-border p-4 flex flex-col transition-all hover:shadow-lg hover:border-primary/50">
