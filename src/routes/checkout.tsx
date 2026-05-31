@@ -7,6 +7,12 @@ import { placeOrder } from "@/lib/api/orders.functions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+const SRI_LANKA_DISTRICTS = [
+  "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara",
+  "Kandy", "Kegalle", "Kilinochchi", "Kurunegala", "Mannar", "Matale", "Matara", "Monaragala", "Mullaitivu", "Nuwara Eliya",
+  "Polonnaruwa", "Putlam", "Ratnapura", "Sampulunthurai", "Vavuniya"
+];
+
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
@@ -90,11 +96,10 @@ function Checkout() {
     address: "",
     city: "",
     district: "",
-    postalCode: "",
   });
 
   async function handlePlaceOrder() {
-    const required = ["name", "phone", "email", "address", "city", "district", "postalCode"];
+    const required = ["name", "phone", "email", "address", "city", "district"];
     const missing = required.filter(key => !form[key as keyof typeof form]);
     
     if (missing.length > 0) {
@@ -118,7 +123,6 @@ function Checkout() {
             address: form.address,
             city: form.city,
             district: form.district,
-            postalCode: form.postalCode,
           },
           shippingMethod: delivery,
           paymentMethod: payment,
@@ -178,11 +182,9 @@ function Checkout() {
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
                 >
                   <option value="">Select district</option>
-                  <option value="Colombo">Colombo</option><option value="Gampaha">Gampaha</option><option value="Kandy">Kandy</option><option value="Galle">Galle</option>
+                  {SRI_LANKA_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
-              <Field label="Postal Code" placeholder="Enter postal code" 
-                value={form.postalCode} onChange={(v) => setForm(f => ({ ...f, postalCode: v }))} />
             </div>
 
             <p className="mt-6 mb-2 text-sm font-semibold">Delivery Method</p>
