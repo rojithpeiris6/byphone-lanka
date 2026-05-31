@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Search, User, ShoppingCart, Truck, ShieldCheck, RotateCcw, Home, LayoutGrid, Tag, UserCircle2 } from "lucide-react";
 import { useCart } from "@/lib/shop";
-import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/lib/auth";
+import { useAuthModalStore } from "@/lib/auth-modal-store";
 
 export function AnnounceBar() {
   return (
@@ -19,10 +19,11 @@ export function AnnounceBar() {
 
 export function Header() {
   const [mounted, setMounted] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
+  const navigate = useNavigate();
   const count = useCart((s) => s.count());
   const openCart = useCart((s) => s.open);
   const { user } = useAuth();
+  const openAuthModal = useAuthModalStore((s) => s.open);
 
   useEffect(() => {
     setMounted(true);
@@ -38,40 +39,37 @@ export function Header() {
   ];
 
   return (
-    <>
-      <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border">
-        <AnnounceBar />
-        <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-6">
-          <Link to="/" className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary">
-            byphone<span className="text-foreground">.lk</span>
-          </Link>
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium">
-            {nav.map((n, i) => (
-              <Link key={i} to={n.to} className="text-foreground/80 hover:text-primary transition-colors">{n.label}</Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-1 sm:gap-2 text-foreground">
-            <button aria-label="Search" className="p-2 rounded-full hover:bg-secondary transition-colors"><Search className="size-5" /></button>
-            <button 
-              aria-label="Account" 
-              onClick={() => user ? window.location.href = '/account' : setAuthOpen(true)}
-              className="p-2 rounded-full hover:bg-secondary transition-colors hidden sm:inline-flex"
-            >
-              <User className="size-5" />
-            </button>
-            <button onClick={openCart} aria-label="Cart" className="relative p-2 rounded-full hover:bg-secondary transition-colors">
-              <ShoppingCart className="size-5" />
-              {mounted && count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 min-w-4 flex items-center justify-center px-1">
-                  {count}
-                </span>
-              )}
-            </button>
-          </div>
+    <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border">
+      <AnnounceBar />
+      <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-6">
+        <Link to="/" className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary">
+          byphone<span className="text-foreground">.lk</span>
+        </Link>
+        <nav className="hidden lg:flex items-center gap-7 text-sm font-medium">
+          {nav.map((n, i) => (
+            <Link key={i} to={n.to} className="text-foreground/80 hover:text-primary transition-colors">{n.label}</Link>
+          ))}
+        </nav>
+        <div className="flex items-center gap-1 sm:gap-2 text-foreground">
+          <button aria-label="Search" className="p-2 rounded-full hover:bg-secondary transition-colors"><Search className="size-5" /></button>
+          <button 
+            aria-label="Account" 
+            onClick={() => user ? navigate({ to: '/account' }) : openAuthModal()}
+            className="p-2 rounded-full hover:bg-secondary transition-colors hidden sm:inline-flex"
+          >
+            <User className="size-5" />
+          </button>
+          <button onClick={openCart} aria-label="Cart" className="relative p-2 rounded-full hover:bg-secondary transition-colors">
+            <ShoppingCart className="size-5" />
+            {mounted && count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 min-w-4 flex items-center justify-center px-1">
+                {count}
+              </span>
+            )}
+          </button>
         </div>
-      </header>
-      <AuthModal open={authOpen} onOpenChange={setAuthOpen} />
-    </>
+      </div>
+    </header>
   );
 }
 
@@ -79,6 +77,8 @@ export function BottomNav() {
   const [mounted, setMounted] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   const count = useCart((s) => s.count());
+  const { user } = useAuth();
+  const openAuthModal = useAuthModalStore((s) => s.open);
 
   useEffect(() => {
     setMounted(true);
@@ -97,8 +97,21 @@ export function BottomNav() {
       <div className="grid grid-cols-5">
         {items.map(({ to, label, Icon, badge }, i) => {
           const active = (to === "/" ? path === "/" : path.startsWith(to));
+          
+          const handleClick = (e: React.MouseEvent) => {
+            if (to === "/account" && !user) {
+              e.preventDefault();
+              openAuthModal();
+            }
+          };
+
           return (
-            <Link key={i} to={to} className="flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium relative">
+            <Link 
+              key={i} 
+              to={to} 
+              onClick={handleClick}
+              className="flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium relative"
+            >
               <span className={"relative " + (active ? "text-primary" : "text-muted-foreground")}>
                 <Icon className="size-5" />
                 {mounted && badge ? (

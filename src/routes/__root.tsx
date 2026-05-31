@@ -17,6 +17,8 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminAuthProvider } from "@/lib/admin-auth";
 import { CustomerAuthProvider } from "@/lib/auth";
+import { AuthModal } from "@/components/AuthModal";
+import { useAuthModalStore } from "@/lib/auth-modal-store";
 
 function NotFoundComponent() {
   return (
@@ -66,7 +68,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
       { name: "twitter:description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
@@ -96,6 +97,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isAdmin = path.startsWith("/admin");
+  
+  const authModalOpen = useAuthModalStore((s) => s.isOpen);
+  const authModalClose = useAuthModalStore((s) => s.close);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AdminAuthProvider>
@@ -114,6 +119,7 @@ function RootComponent() {
               <Footer />
               <BottomNav />
               <CartDrawer />
+              <AuthModal open={authModalOpen} onOpenChange={(open) => !open && authModalClose()} />
               <Toaster position="top-center" richColors />
             </div>
           )}
