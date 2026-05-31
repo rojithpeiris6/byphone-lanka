@@ -21,7 +21,7 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
     queryFn: async () => {
       const { data, error } = await supabase
         .from("product_variants")
-        .select("id")
+        .select("id, stock_quantity")
         .eq("product_id", p.id);
       if (error) throw error;
       return data ?? [];
@@ -62,7 +62,10 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
     qc.invalidateQueries({ queryKey: ["wishlist"] });
   };
 
+  const isOutOfStock = (p.stock_quantity ?? 1) <= 0;
+
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
     if (variants && variants.length > 0) {
       setIsSelectorOpen(true);
     } else {
@@ -73,8 +76,11 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
 
   return (
     <div className="group relative bg-card rounded-2xl border border-border p-3 sm:p-4 flex flex-col transition-all hover:shadow-[var(--shadow-card)] hover:-translate-y-0.5">
-      {p.badge && (
+      {p.badge && !isOutOfStock && (
         <span className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground text-[10px] font-bold tracking-wide px-2 py-1 rounded-full">{p.badge}</span>
+      )}
+      {isOutOfStock && (
+        <span className="absolute top-3 left-3 z-10 bg-rose-600 text-white text-[10px] font-black tracking-widest px-2 py-1 rounded-full uppercase">OUT OF STOCK</span>
       )}
       {showWishlist && (
         <button 
@@ -90,7 +96,7 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
           <Heart className={cn("size-4", wishlist && "fill-rose-500")} />
         </button>
       )}
-      <Link to="/product/$slug" params={{ slug: p.slug }} className="aspect-square rounded-xl bg-muted/50 grid place-items-center overflow-hidden">
+      <Link to="/product/$slug" params={{ slug: p.slug }} className={cn("aspect-square rounded-xl bg-muted/50 grid place-items-center overflow-hidden", isOutOfStock && "opacity-60 grayscale")}>
         <img src={p.image} alt={p.name} loading="lazy" width={400} height={400} className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105" />
       </Link>
       <div className="mt-3 flex-1 flex flex-col">
@@ -109,9 +115,15 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
         </div>
         <button
           onClick={handleAddToCart}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 text-primary text-sm font-semibold py-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+          disabled={isOutOfStock}
+          className={cn(
+            "mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border py-2 text-sm font-semibold transition-colors",
+            isOutOfStock 
+              ? "border-muted-foreground/20 bg-muted text-muted-foreground cursor-not-allowed" 
+              : "border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+          )}
         >
-          <ShoppingCart className="size-4" /> ADD TO CART
+          {isOutOfStock ? "OUT OF STOCK" : <><ShoppingCart className="size-4" /> ADD TO CART</>}
         </button>
       </div>
 

@@ -223,13 +223,17 @@ function ProductPage() {
     return p.oldPrice + diff;
   }, [p.oldPrice, selectedVariant]);
 
-  const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity <= 0 : false;
   const hasVariants = p.variants && p.variants.length > 0;
+  const isOutOfStock = hasVariants 
+    ? (selectedVariant ? selectedVariant.stock_quantity <= 0 : p.variants.every((v: any) => v.stock_quantity <= 0))
+    : p.stock_quantity <= 0;
+
   const isAddDisabled = isOutOfStock || (hasVariants && !selectedVariantId);
 
   const related = products.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
 
   function handleAdd() {
+    if (isOutOfStock) return;
     if (hasVariants && !selectedVariantId) {
       toast.error("Please select a configuration before adding to cart");
       return;
@@ -317,26 +321,31 @@ function ProductPage() {
               alt={p.name} 
               width={800} 
               height={800} 
-              className="h-full w-full object-contain p-6" 
+              className={cn("h-full w-full object-contain p-6", isOutOfStock && "grayscale opacity-80")} 
             />
             <div className="absolute top-4 right-4 size-9 grid place-items-center rounded-full bg-background/80 border border-border pointer-events-none shadow-sm backdrop-blur-sm">
               <Maximize2 className="size-4" />
             </div>
+            {isOutOfStock && (
+              <div className="absolute inset-0 grid place-items-center bg-black/5">
+                <span className="bg-rose-600 text-white text-xs font-black tracking-widest px-4 py-2 rounded-full uppercase shadow-lg border-2 border-white/20">OUT OF STOCK</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Info */}
         <div>
-          {p.activeFlashSale ? (
+          {p.activeFlashSale && !isOutOfStock ? (
             <div className="inline-flex items-center gap-2 bg-rose-100 text-rose-600 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
               <span className="flex h-2 w-2 rounded-full bg-rose-600 animate-pulse" />
               Flash Deal
             </div>
-          ) : p.badge ? (
+          ) : p.badge && !isOutOfStock ? (
             <span className="inline-block bg-primary text-primary-foreground text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full">{p.badge}</span>
           ) : null}
 
-          {p.activeFlashSale && (
+          {p.activeFlashSale && !isOutOfStock && (
             <div className="mb-4 flex items-center gap-2 bg-rose-50 border border-rose-200/50 rounded-2xl p-3.5 max-w-sm">
               <Timer className="size-5 text-rose-600 shrink-0 animate-spin duration-3000" />
               <div>
@@ -355,7 +364,7 @@ function ProductPage() {
               <span className="text-primary font-semibold ml-1">({p.reviews} reviews)</span>
             </div>
             <span className="text-border">|</span>
-            <span className={cn("font-semibold", isOutOfStock ? "text-destructive" : "text-[color:var(--color-success)]")}>
+            <span className={cn("font-bold uppercase tracking-wider text-xs", isOutOfStock ? "text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100" : "text-[color:var(--color-success)] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100")}>
               {isOutOfStock ? "Out of Stock" : "In Stock"}
             </span>
           </div>
@@ -399,7 +408,7 @@ function ProductPage() {
 
           <div className="mt-6 flex items-center gap-4">
             <span className="text-sm font-semibold">Quantity:</span>
-            <div className="inline-flex items-center border border-border rounded-xl">
+            <div className={cn("inline-flex items-center border border-border rounded-xl", isOutOfStock && "opacity-50 pointer-events-none")}>
               <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-2 hover:bg-muted rounded-l-xl"><Minus className="size-4" /></button>
               <span className="px-4 text-sm font-semibold w-10 text-center">{qty}</span>
               <button onClick={() => setQty(qty + 1)} className="p-2 hover:bg-muted rounded-r-xl"><Plus className="size-4" /></button>
@@ -410,10 +419,14 @@ function ProductPage() {
             <button 
               onClick={handleAdd} 
               disabled={isAddDisabled}
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={cn(
+                "flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide transition-all uppercase",
+                isOutOfStock 
+                  ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
+                  : "bg-primary text-primary-foreground hover:bg-primary-dark shadow-lg shadow-primary/20"
+              )}
             >
-              <ShoppingCart className="size-5" /> 
-              {hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART"}
+              {isOutOfStock ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
             </button>
             <button 
               onClick={toggleWishlist}
@@ -602,10 +615,14 @@ function ProductPage() {
           <button 
             onClick={handleAdd} 
             disabled={isAddDisabled}
-            className="flex-1 bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50"
+            className={cn(
+              "flex-1 rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2 transition-all uppercase",
+              isOutOfStock 
+                ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
+                : "bg-primary text-primary-foreground"
+            )}
           >
-            <ShoppingCart className="size-4" /> 
-            {hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART"}
+            {isOutOfStock ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
           </button>
         </div>
       </div>

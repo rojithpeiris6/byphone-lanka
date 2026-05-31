@@ -29,6 +29,7 @@ export type Product = {
   description?: string;
   specs?: Record<string, string>;
   variants?: any[];
+  stock_quantity?: number;
 };
 
 export const products: Product[] = [
@@ -38,6 +39,7 @@ export const products: Product[] = [
     brand: "Apple", name: "iPhone 15 Pro 256GB",
     price: 499999, oldPrice: 529999, rating: 4.8, reviews: 128,
     image: iphone15pro, category: "Smartphones", badge: "NEW",
+    stock_quantity: 10,
     storage: ["128GB", "256GB", "512GB", "1TB"],
     colors: [
       { name: "Natural Titanium", hex: "#B5AFA4" },
@@ -70,6 +72,7 @@ export const products: Product[] = [
     brand: "Samsung", name: "Galaxy S24 Ultra 5G 256GB",
     price: 399999, oldPrice: 449999, rating: 4.7, reviews: 96,
     image: s24ultra, category: "Smartphones", badge: "-11%",
+    stock_quantity: 5,
     storage: ["256GB", "512GB", "1TB"],
     colors: [{ name: "Titanium Black", hex: "#1c1c1e" }, { name: "Titanium Gray", hex: "#8e8e93" }],
   },
@@ -79,6 +82,7 @@ export const products: Product[] = [
     brand: "OnePlus", name: "OnePlus 12 5G 256GB",
     price: 279999, rating: 4.6, reviews: 64,
     image: oneplus12, category: "Smartphones",
+    stock_quantity: 8,
     storage: ["256GB", "512GB"],
     colors: [{ name: "Flowy Emerald", hex: "#1c5f3f" }, { name: "Silky Black", hex: "#101010" }],
   },
@@ -88,6 +92,7 @@ export const products: Product[] = [
     brand: "Xiaomi", name: "Xiaomi 14 5G 256GB",
     price: 239999, rating: 4.5, reviews: 41,
     image: xiaomi14, category: "Smartphones",
+    stock_quantity: 0,
   },
   {
     id: "nothing-2-256",
@@ -95,6 +100,7 @@ export const products: Product[] = [
     brand: "Nothing", name: "Nothing Phone (2) 12GB / 256GB",
     price: 189999, rating: 4.6, reviews: 88,
     image: nothing2, category: "Smartphones",
+    stock_quantity: 12,
   },
   {
     id: "airpods-pro-2",
@@ -102,6 +108,7 @@ export const products: Product[] = [
     brand: "Apple", name: "AirPods Pro (2nd Gen) USB-C",
     price: 79999, rating: 4.8, reviews: 312,
     image: earbuds, category: "Earbuds",
+    stock_quantity: 20,
   },
   {
     id: "apple-watch-s9",
@@ -109,6 +116,7 @@ export const products: Product[] = [
     brand: "Apple", name: "Apple Watch Series 9 45mm",
     price: 139999, rating: 4.7, reviews: 152,
     image: watch, category: "Smartwatches",
+    stock_quantity: 15,
   },
   {
     id: "ipad-pro-m4",
@@ -116,6 +124,7 @@ export const products: Product[] = [
     brand: "Apple", name: 'iPad Pro M4 11" 256GB',
     price: 349999, rating: 4.9, reviews: 73,
     image: tablet, category: "Tablets",
+    stock_quantity: 7,
   },
   {
     id: "case-iphone-15",
@@ -123,6 +132,7 @@ export const products: Product[] = [
     brand: "byphone", name: "Silicone Case for iPhone 15",
     price: 4990, rating: 4.4, reviews: 220,
     image: cases, category: "Cases",
+    stock_quantity: 50,
   },
   {
     id: "charger-20w",
@@ -130,6 +140,7 @@ export const products: Product[] = [
     brand: "Apple", name: "20W USB-C Power Adapter",
     price: 6990, rating: 4.6, reviews: 410,
     image: charger, category: "Chargers",
+    stock_quantity: 0,
   },
 ];
 
