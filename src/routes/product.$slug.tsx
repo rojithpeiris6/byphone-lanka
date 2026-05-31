@@ -74,7 +74,7 @@ function ProductPage() {
   const qc = useQueryClient();
   const [qty, setQty] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
-  const [tab, setTab] = useState<"specs" | "desc" | "reviews" | "warranty">("specs");
+  const [tab, setTab] = useState<"desc" | "reviews" | "warranty">("desc");
 
   // Filter unique available images
   const allImages = useMemo(() => {
@@ -437,21 +437,11 @@ function ProductPage() {
       {/* Tabs */}
       <section className="mt-14">
         <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
-          {([["specs", "Specifications"], ["desc", "Description"], ["reviews", "Reviews"], ["warranty", "Warranty"]] as const).map(([k, label]) => (
+          {([["desc", "Description"], ["reviews", "Reviews"], ["warranty", "Warranty"]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setTab(k)} className={"px-4 py-3 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap " + (tab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>{label}</button>
           ))}
         </div>
         <div className="py-6">
-          {tab === "specs" && p.specs && (
-            <div className="grid sm:grid-cols-2 gap-y-3 gap-x-10 max-w-3xl">
-              {Object.entries(p.specs).map(([k, v]: any) => (
-                <div key={k} className="flex justify-between gap-4 border-b border-border py-2 text-sm">
-                  <span className="text-muted-foreground">{k}</span>
-                  <span className="font-semibold text-right">{v}</span>
-                </div>
-              ))}
-            </div>
-          )}
           {tab === "desc" && (
             <div className="max-w-3xl text-sm leading-relaxed text-muted-foreground space-y-3">
               <p>{p.description ?? `${p.name} — premium build, flagship performance, and an incredible camera system. Backed by official warranty.`}</p>
