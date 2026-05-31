@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles } from "lucide-react";
 import hero from "@/assets/hero-phones.jpg";
-import { categories, products, brands } from "@/lib/shop";
+import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/")({
@@ -33,7 +34,61 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
 }
 
 function Home() {
-  const featured = products.filter((p) => p.category === "Smartphones");
+  // Fetch Categories
+  const { data: dbCategories } = useQuery({
+    queryKey: ["home-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, image, slug")
+        .eq("status", "active")
+        .order("sort_order");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch Brands
+  const { data: dbBrands } = useQuery({
+    queryKey: ["home-brands"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brands")
+        .select("name")
+        .eq("status", "active")
+        .order("name");
+      if (error) throw error;
+      return data?.map((b) => b.name) ?? [];
+    },
+  });
+
+  // Fetch Featured Products
+  const { data: dbFeatured } = useQuery({
+    queryKey: ["home-featured"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`
+          *,
+          brands(name),
+          categories(name)
+        `)
+        .eq("featured", true)
+        .eq("status", "active")
+        .limit(10);
+      if (error) throw error;
+      
+      // Map DB response to the Product type expected by ProductCard
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        brand: p.brands?.name || "Unknown Brand",
+        category: p.categories?.name || "General",
+        oldPrice: p.discount_price ? p.price : undefined,
+        price: p.discount_price || p.price,
+      }));
+    },
+  });
+
   return (
     <div>
       {/* HERO */}
@@ -88,10 +143,10 @@ function Home() {
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">SHOP BY CATEGORY</h2>
         </div>
         <div className="mt-6 flex lg:grid lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
-          {categories.map((c) => (
+          {dbCategories?.map((c) => (
             <Link to="/shop" key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
               <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
-                <img src={c.image} alt={c.name} loading="lazy" className="h-3/4 w-3/4 object-contain" />
+                <img src={c.image || ""} alt={c.name} loading="lazy" className="h-3/4 w-3/4 object-contain" />
               </div>
               <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
             </Link>
@@ -109,7 +164,7 @@ function Home() {
           <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-          {featured.map((p) => <ProductCard key={p.id} p={p} />)}
+          {dbFeatured?.map((p) => <ProductCard key={p.id} p={p} />)}
         </div>
       </section>
 
@@ -137,7 +192,7 @@ function Home() {
       <section className="mx-auto max-w-7xl px-4 mt-14">
         <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center mb-6">SHOP BY BRAND</h2>
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
-          {brands.map((b) => (
+          {dbBrands?.map((b) => (
             <div key={b} className="aspect-[2/1] rounded-xl border border-border bg-card grid place-items-center text-sm font-bold text-foreground/70 hover:text-primary hover:border-primary transition-colors">
               {b}
             </div>
