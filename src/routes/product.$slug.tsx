@@ -29,6 +29,8 @@ export const Route = createFileRoute("/product/$slug")({
         image: product.product_images?.[0]?.url || "",
         oldPrice: product.discount_price ? product.price : undefined,
         price: product.discount_price || product.price,
+        rating: 0,
+        reviews: 0,
       } as Product
     };
   },
