@@ -200,10 +200,10 @@ function NavButton({ active, onClick, icon: Icon, label }: any) {
 
 function DashboardView({ profile, setActiveTab }: any) {
   const quickLinks = [
-    { id: 'orders', label: 'Track Orders', icon: Package, desc: 'Check delivery status', color: 'bg-blue-500/10 text-blue-600' },
-    { id: 'wishlist', label: 'My Wishlist', icon: Heart, desc: 'Saved favorites', color: 'bg-rose-500/10 text-rose-600' },
-    { id: 'profile', label: 'Edit Profile', icon: User, desc: 'Update your info', color: 'bg-amber-500/10 text-amber-600' },
-    { id: 'payment', label: 'Payments', icon: CreditCard, desc: 'Manage cards', color: 'bg-emerald-500/10 text-emerald-600' },
+    { id: 'orders', label: 'Track Orders', Icon: Package, desc: 'Check delivery status', color: 'bg-blue-500/10 text-blue-600' },
+    { id: 'wishlist', label: 'My Wishlist', Icon: Heart, desc: 'Saved favorites', color: 'bg-rose-500/10 text-rose-600' },
+    { id: 'profile', label: 'Edit Profile', Icon: User, desc: 'Update your info', color: 'bg-amber-500/10 text-amber-600' },
+    { id: 'payment', label: 'Payments', Icon: CreditCard, desc: 'Manage cards', color: 'bg-emerald-500/10 text-emerald-600' },
   ];
 
   return (
