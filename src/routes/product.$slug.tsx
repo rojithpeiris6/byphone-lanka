@@ -5,6 +5,7 @@ import { products, formatLKR, useCart, type Product } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -55,9 +56,45 @@ export const Route = createFileRoute("/product/$slug")({
 function ProductPage() {
   const { product: p } = Route.useLoaderData() as { product: Product };
   const add = useCart((s) => s.add);
+  const qc = useQueryClient();
   const [qty, setQty] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState<"specs" | "desc" | "reviews" | "warranty">("specs");
+
+  const { data: { user } } = supabase.auth.getUser();
+
+  const { data: wishlist } = useQuery({
+    queryKey: ["wishlist", user?.id, p.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("wishlist")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("product_id", p.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const toggleWishlist = async () => {
+    if (!user) {
+      toast.error("Please sign in to save favorites");
+      return;
+    }
+
+    if (wishlist) {
+      const { error } = await supabase.from("wishlist").delete().eq("id", wishlist.id);
+      if (error) return toast.error("Could not remove from wishlist");
+      toast.success("Removed from wishlist");
+    } else {
+      const { error } = await supabase.from("wishlist").insert({ user_id: user.id, product_id: p.id });
+      if (error) return toast.error("Could not save to wishlist");
+      toast.success("Added to wishlist");
+    }
+    qc.invalidateQueries({ queryKey: ["wishlist"] });
+  };
 
   const selectedVariant = useMemo(() => 
     p.variants?.find(v => v.id === selectedVariantId), 
@@ -72,7 +109,6 @@ function ProductPage() {
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity <= 0 : false;
 
-  // Simplified related products fetch using mock data for now
   const related = products.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
 
   function handleAdd() {
@@ -182,7 +218,15 @@ function ProductPage() {
             >
               <ShoppingCart className="size-5" /> ADD TO CART
             </button>
-            <button className="size-14 grid place-items-center border-2 border-primary/30 text-primary rounded-2xl hover:bg-primary-soft"><Heart className="size-5" /></button>
+            <button 
+              onClick={toggleWishlist}
+              className={cn(
+                "size-14 grid place-items-center border-2 rounded-2xl transition-all",
+                wishlist ? "bg-rose-50 border-rose-500 text-rose-500" : "border-primary/30 text-primary hover:bg-primary-soft"
+              )}
+            >
+              <Heart className={cn("size-5", wishlist && "fill-rose-500")} />
+            </button>
           </div>
 
           <div className="mt-6 rounded-2xl border border-border p-4 grid grid-cols-3 gap-4">

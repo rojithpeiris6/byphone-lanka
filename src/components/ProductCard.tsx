@@ -2,16 +2,65 @@ import { Link } from "@tanstack/react-router";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import type { Product } from "@/lib/shop";
 import { formatLKR, useCart } from "@/lib/shop";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export function ProductCard({ p }: { p: Product }) {
   const add = useCart((s) => s.add);
+  const qc = useQueryClient();
+  const { data: { user } } = supabase.auth.getUser();
+
+  // Check if product is in wishlist
+  const { data: wishlist } = useQuery({
+    queryKey: ["wishlist", user?.id, p.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("wishlist")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("product_id", p.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const toggleWishlist = async () => {
+    if (!user) {
+      toast.error("Please sign in to save favorites");
+      return;
+    }
+
+    if (wishlist) {
+      const { error } = await supabase.from("wishlist").delete().eq("id", wishlist.id);
+      if (error) return toast.error("Could not remove from wishlist");
+      toast.success("Removed from wishlist");
+    } else {
+      const { error } = await supabase.from("wishlist").insert({ user_id: user.id, product_id: p.id });
+      if (error) return toast.error("Could not save to wishlist");
+      toast.success("Added to wishlist");
+    }
+    qc.invalidateQueries({ queryKey: ["wishlist"] });
+  };
+
   return (
     <div className="group relative bg-card rounded-2xl border border-border p-3 sm:p-4 flex flex-col transition-all hover:shadow-[var(--shadow-card)] hover:-translate-y-0.5">
       {p.badge && (
         <span className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground text-[10px] font-bold tracking-wide px-2 py-1 rounded-full">{p.badge}</span>
       )}
-      <button aria-label="Wishlist" className="absolute top-3 right-3 z-10 size-8 grid place-items-center rounded-full bg-background/80 backdrop-blur border border-border text-muted-foreground hover:text-primary">
-        <Heart className="size-4" />
+      <button 
+        onClick={toggleWishlist}
+        aria-label="Wishlist" 
+        className={cn(
+          "absolute top-3 right-3 z-10 size-8 grid place-items-center rounded-full backdrop-blur border transition-colors",
+          wishlist 
+            ? "bg-rose-50 border-rose-200 text-rose-500" 
+            : "bg-background/80 border-border text-muted-foreground hover:text-primary"
+        )}
+      >
+        <Heart className={cn("size-4", wishlist && "fill-rose-500")} />
       </button>
       <Link to="/product/$slug" params={{ slug: p.slug }} className="aspect-square rounded-xl bg-muted/50 grid place-items-center overflow-hidden">
         <img src={p.image} alt={p.name} loading="lazy" width={400} height={400} className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105" />
@@ -39,4 +88,8 @@ export function ProductCard({ p }: { p: Product }) {
       </div>
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }
