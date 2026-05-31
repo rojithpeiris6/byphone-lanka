@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
+import { useAuthModalStore } from "@/lib/auth-modal-store";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -75,6 +76,7 @@ function ProductPage() {
   const [qty, setQty] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState<"desc" | "reviews" | "warranty">("desc");
+  const openAuth = useAuthModalStore((s) => s.open);
 
   // Filter unique available images
   const allImages = useMemo(() => {
@@ -105,7 +107,7 @@ function ProductPage() {
         .select("id")
         .eq("user_id", user.id)
         .eq("product_id", p.id)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!user,
@@ -190,7 +192,8 @@ function ProductPage() {
 
   const toggleWishlist = async () => {
     if (!user) {
-      toast.error("Please sign in to save favorites");
+      toast.info("Please sign in to save favorites");
+      openAuth();
       return;
     }
 
@@ -203,7 +206,10 @@ function ProductPage() {
       if (error) return toast.error("Could not save to wishlist");
       toast.success("Added to wishlist");
     }
-    qc.invalidateQueries({ queryKey: ["wishlist"] });
+    
+    // Sync UI
+    qc.invalidateQueries({ queryKey: ["wishlist", user.id] });
+    qc.invalidateQueries({ queryKey: ["customer-wishlist", user.id] });
   };
 
   const selectedVariant = useMemo(() => 
@@ -430,12 +436,15 @@ function ProductPage() {
             </button>
             <button 
               onClick={toggleWishlist}
+              aria-label={wishlist ? "Remove from wishlist" : "Add to wishlist"}
               className={cn(
-                "size-14 grid place-items-center border-2 rounded-2xl transition-all",
-                wishlist ? "bg-rose-50 border-rose-500 text-rose-500" : "border-primary/30 text-primary hover:bg-primary-soft"
+                "size-14 grid place-items-center border-2 rounded-2xl transition-all active:scale-95",
+                wishlist 
+                  ? "bg-rose-50 border-rose-500 text-rose-500 shadow-inner" 
+                  : "border-primary/30 text-primary hover:bg-primary-soft"
               )}
             >
-              <Heart className={cn("size-5", wishlist && "fill-rose-500")} />
+              <Heart className={cn("size-5", wishlist && "fill-rose-500 scale-110")} />
             </button>
           </div>
 

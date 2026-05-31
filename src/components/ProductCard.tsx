@@ -3,16 +3,18 @@ import { Heart, ShoppingCart, Star } from "lucide-react";
 import type { Product } from "@/lib/shop";
 import { formatLKR, useCart } from "@/lib/shop";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useState } from "react";
 import { ProductVariantSelector } from "@/components/ProductVariantSelector";
+import { useAuthModalStore } from "@/lib/auth-modal-store";
 
 export function ProductCard({ p, showWishlist = true }: { p: Product; showWishlist?: boolean }) {
   const add = useCart((s) => s.add);
   const qc = useQueryClient();
   const { user } = useAuth();
+  const openAuth = useAuthModalStore((s) => s.open);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
   // Check if product has variants
@@ -38,15 +40,19 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
         .select("id")
         .eq("user_id", user.id)
         .eq("product_id", p.id)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!user && showWishlist,
   });
 
-  const toggleWishlist = async () => {
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!user) {
-      toast.error("Please sign in to save favorites");
+      toast.info("Please sign in to save your favorites");
+      openAuth();
       return;
     }
 
@@ -59,7 +65,10 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
       if (error) return toast.error("Could not save to wishlist");
       toast.success("Added to wishlist");
     }
-    qc.invalidateQueries({ queryKey: ["wishlist"] });
+    
+    // Invalidate both individual checks and list views
+    qc.invalidateQueries({ queryKey: ["wishlist", user.id] });
+    qc.invalidateQueries({ queryKey: ["customer-wishlist", user.id] });
   };
 
   const isOutOfStock = (p.stock_quantity ?? 1) <= 0;
@@ -85,15 +94,15 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
       {showWishlist && (
         <button 
           onClick={toggleWishlist}
-          aria-label="Wishlist" 
+          aria-label={wishlist ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-3 right-3 z-10 size-8 grid place-items-center rounded-full backdrop-blur border transition-colors",
+            "absolute top-3 right-3 z-10 size-8 grid place-items-center rounded-full backdrop-blur border transition-all active:scale-90",
             wishlist 
-              ? "bg-rose-50 border-rose-200 text-rose-500" 
-              : "bg-background/80 border-border text-muted-foreground hover:text-primary"
+              ? "bg-rose-50 border-rose-200 text-rose-500 shadow-sm" 
+              : "bg-background/80 border-border text-muted-foreground hover:text-primary hover:border-primary/30"
           )}
         >
-          <Heart className={cn("size-4", wishlist && "fill-rose-500")} />
+          <Heart className={cn("size-4 transition-transform", wishlist && "fill-rose-500 scale-110")} />
         </button>
       )}
       <Link to="/product/$slug" params={{ slug: p.slug }} className={cn("aspect-square rounded-xl bg-muted/50 grid place-items-center overflow-hidden", isOutOfStock && "opacity-60 grayscale")}>
