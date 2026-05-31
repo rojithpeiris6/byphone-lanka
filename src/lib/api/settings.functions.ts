@@ -4,19 +4,26 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const getSettings = createServerFn({ method: "GET" })
   .handler(async () => {
-    const { data, error } = await supabaseAdmin
-      .from("settings")
-      .select("*");
-    
-    if (error) throw error;
-    
-    // Transform array to a convenient object
-    const settingsMap: Record<string, any> = {};
-    data.forEach(s => {
-      settingsMap[s.key] = s.value;
-    });
-    
-    return settingsMap;
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("settings")
+        .select("*");
+      
+      if (error) {
+        console.error("Database error fetching settings:", error);
+        return {}; // Return empty object if table doesn't exist or query fails
+      }
+      
+      const settingsMap: Record<string, any> = {};
+      data?.forEach(s => {
+        settingsMap[s.key] = s.value;
+      });
+      
+      return settingsMap;
+    } catch (e) {
+      console.error("Server function error in getSettings:", e);
+      return {}; // Graceful fallback
+    }
   });
 
 export const updateSetting = createServerFn({ method: "POST" })
