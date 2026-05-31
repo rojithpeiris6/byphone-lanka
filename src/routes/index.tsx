@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle } from "lucide-react";
 import hero from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,38 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
         <p className="text-xs sm:text-sm font-bold uppercase tracking-wide leading-tight">{title}</p>
         <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">{sub}</p>
       </div>
+    </div>
+  );
+}
+
+function CountdownTimer({ expiresAt }: { expiresAt: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = new Date(expiresAt).getTime() - now;
+
+      if (distance < 0) {
+        setTimeLeft("EXPIRED");
+        clearInterval(timer);
+        return;
+      }
+
+      const hours = Math.floor((distance / (1000 * 60 * 60)));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [expiresAt]);
+
+  return (
+    <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-tighter text-rose-600">
+      <Timer className="size-3" />
+      {timeLeft}
     </div>
   );
 }
@@ -86,7 +119,7 @@ function Home() {
     },
   });
 
-  // Fetch Flash Sales from the NEW flash_sales table
+  // Fetch Flash Sales from the flash_sales table
   const { data: dbFlashSales } = useQuery({
     queryKey: ["home-flash-sales"],
     queryFn: async () => {
@@ -95,6 +128,7 @@ function Home() {
         .from("flash_sales")
         .select(`
           sale_price,
+          end_at,
           products (
             *,
             brands(name),
@@ -113,6 +147,7 @@ function Home() {
         const p = s.products;
         return {
           ...p,
+          endDate: s.end_at,
           brand: p.brands?.name || "Unknown Brand",
           category: p.categories?.name || "General",
           image: p.product_images?.[0]?.url || "",
@@ -226,7 +261,14 @@ function Home() {
             <Link to="/deals" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">View All Deals <ChevronRight className="size-4" /></Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-            {dbFlashSales.map((p) => <ProductCard key={p.id} p={p} />)}
+            {dbFlashSales.map((p) => (
+              <div key={p.id} className="group relative">
+                <div className="absolute top-2 right-2 z-20 bg-rose-600 text-white px-2 py-1 rounded-lg shadow-sm">
+                  <CountdownTimer expiresAt={p.endDate || ""} />
+                </div>
+                <ProductCard p={p} />
+              </div>
+            ))}
           </div>
         </section>
       )}
