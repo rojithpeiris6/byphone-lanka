@@ -327,7 +327,7 @@ function OrdersView({ userId, userEmail }: { userId: string; userEmail: string }
   const { data: orders, isLoading } = useQuery({
     queryKey: ["customer-orders", userId],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from("orders")
         .select("*")
         .order("created_at", { ascending: false });
@@ -340,7 +340,7 @@ function OrdersView({ userId, userEmail }: { userId: string; userEmail: string }
 
       const { data, error } = await query;
       if (error) throw error;
-      return data ?? [];
+      return (data as any[]) ?? [];
     },
   });
 
@@ -372,7 +372,7 @@ function OrdersView({ userId, userEmail }: { userId: string; userEmail: string }
                 </div>
               </td></tr>
             ) : (
-              orders?.map((o) => (
+              orders?.map((o: any) => (
                 <tr key={o.id} className="hover:bg-accent/40 transition-colors">
                   <td className="px-6 py-4 font-bold text-primary">{o.order_number}</td>
                   <td className="px-6 py-4 text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</td>
@@ -442,7 +442,7 @@ function WishlistView({ userId }: { userId: string }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {wishlist?.map((item) => {
-            const p = item.products;
+            const p = item.products as any;
             return (
               <div key={item.id} className="group relative bg-card rounded-3xl border border-border p-4 flex flex-col transition-all hover:shadow-lg hover:border-primary/50">
                 <button 
