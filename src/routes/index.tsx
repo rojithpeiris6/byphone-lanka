@@ -258,8 +258,8 @@ function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
             {dbFlashSales.map((p) => (
               <div key={p.id} className="group relative">
-                <div className="absolute top-2 right-2 z-20 bg-rose-600 text-white px-2 py-1 rounded-lg shadow-sm">
-                  <FlashSaleTimer expiresAt={p.endDate || ""} />
+                <div className="absolute top-2 right-2 z-20 bg-rose-600 text-white px-2.5 py-1 rounded-lg shadow-sm">
+                  <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white" />
                 </div>
                 <ProductCard p={p} />
               </div>

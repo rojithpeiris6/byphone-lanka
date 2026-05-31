@@ -121,7 +121,7 @@ function DealsPage() {
             {flashSales?.map((p) => (
               <div key={p.id} className="group relative">
                 <div className="absolute top-3 right-3 z-20 bg-rose-600 text-white px-2 py-1 rounded-lg shadow-sm">
-                  <FlashSaleTimer expiresAt={p.endDate || ""} />
+                  <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white" />
                 </div>
                 <ProductCard p={p} />
               </div>

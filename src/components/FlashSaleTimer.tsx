@@ -5,9 +5,10 @@ import { Timer } from 'lucide-react';
 
 type FlashSaleTimerProps = {
   expiresAt: string;
+  className?: string;
 };
 
-export function FlashSaleTimer({ expiresAt }: FlashSaleTimerProps) {
+export function FlashSaleTimer({ expiresAt, className }: FlashSaleTimerProps) {
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -34,9 +35,13 @@ export function FlashSaleTimer({ expiresAt }: FlashSaleTimerProps) {
   }, [expiresAt]);
 
   return (
-    <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-tighter text-rose-600">
+    <div className={cn("flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-tighter", className)}>
       <Timer className="size-3" />
       {timeLeft}
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }
