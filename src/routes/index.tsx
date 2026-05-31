@@ -42,7 +42,7 @@ function Home() {
   const { data: heroSettings } = useQuery({
     queryKey: ["home-hero-settings"],
     queryFn: async () => {
-      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_hero").single();
+      const { data } = await (supabase as any).from("settings").select("value").eq("key", "homepage_hero").single();
       return data?.value as any;
     }
   });
@@ -74,14 +74,14 @@ function Home() {
   const { data: activeFlashSaleIds } = useQuery({
     queryKey: ["home-active-flash-sale-ids"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("flash_sales")
         .select("product_id")
         .eq("is_active", true)
         .lte("start_at", now)
         .gte("end_at", now);
       if (error) throw error;
-      return data?.map(s => s.product_id) ?? [];
+      return data?.map((s: any) => s.product_id) ?? [];
     }
   });
 
@@ -146,7 +146,7 @@ function Home() {
   const { data: dbFlashSales } = useQuery({
     queryKey: ["home-flash-sales"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("flash_sales")
         .select(`
           sale_price,
@@ -286,9 +286,9 @@ function Home() {
             </div>
             <Link to="/deals" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">View All Deals <ChevronRight className="size-4" /></Link>
           </div>
-          <div className="flex overflow-x-auto no-scrollbar gap-3 sm:gap-5 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
             {dbFlashSales.map((p: any) => (
-              <div key={p.id} className="min-w-[calc(45%-0.5rem)] sm:min-w-[calc(23%-0.5rem)] md:min-w-[calc(23%-0.5rem)] lg:min-w-[calc(19%-0.5rem)] flex-shrink-0 group relative">
+              <div key={p.id} className="group relative">
                 <div className="absolute top-2.5 right-2.5 z-20 bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-lg border border-rose-500/30">
                   <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white text-xs sm:text-xs" />
                 </div>
@@ -306,27 +306,29 @@ function Home() {
           <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-          {dbPopular?.map((p) => <ProductCard key={p.id} p={p} />)}
+          {dbPopular?.map((p: any) => <ProductCard key={p.id} p={p} />)}
         </div>
       </section>
 
       {/* NEW ARRIVALS */}
-      <section className="mx-auto max-w-7xl px-4 mt-14">
-        <div className="flex items-end justify-between mb-5">
-          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">NEW ARRIVALS</h2>
-          <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">Browse All <ChevronRight className="size-4" /></Link>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-          {dbNewArrivals?.map((p) => <ProductCard key={p.id} p={p} />)}
-        </div>
-      </section>
+      {dbNewArrivals && dbNewArrivals.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 mt-14">
+          <div className="flex items-end justify-between mb-5">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">NEW ARRIVALS</h2>
+            <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">Browse All <ChevronRight className="size-4" /></Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+            {dbNewArrivals.map((p: any) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        </section>
+      )}
 
       {/* PROMO BANNERS */}
       <section className="mx-auto max-w-7xl px-4 mt-14 grid md:grid-cols-2 gap-5">
         <div className="relative overflow-hidden rounded-3xl bg-primary text-primary-foreground p-7 sm:p-9">
           <p className="text-[11px] font-bold tracking-widest opacity-80">EXTENDED WARRANTY</p>
           <h3 className="mt-2 text-2xl sm:text-3xl font-extrabold leading-tight">Peace of mind for<br />your device.</h3>
-          <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-background text-foreground rounded-full px-5 py-2.5 text-sm font-bold hover:bg-primary-dark transition-colors">
+          <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-background text-foreground rounded-full px-5 py-2.5 text-sm font-bold">
             LEARN MORE <ChevronRight className="size-4" />
           </Link>
           <div className="absolute -right-6 -bottom-6 opacity-30 text-[180px] leading-none">📱</div>
@@ -334,7 +336,7 @@ function Home() {
         <div className="relative overflow-hidden rounded-3xl bg-primary-soft p-7 sm:p-9">
           <p className="text-[11px] font-bold tracking-widest text-primary">SPECIAL OFFERS</p>
           <h3 className="mt-2 text-2xl sm:text-3xl font-extrabold leading-tight">Exclusive deals<br />just for you!</h3>
-          <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-5 py-2.5 text-sm font-bold hover:bg-primary-dark transition-colors">
+          <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-5 py-2.5 text-sm font-bold">
             SHOP DEALS <ChevronRight className="size-4" />
           </Link>
           <div className="absolute -right-2 -bottom-4 text-[140px] leading-none">🏷️</div>
