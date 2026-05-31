@@ -37,7 +37,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signUp(email: string, password: string, fullName: string, phone: string) {
-    // 1. Sign up the user in Supabase Auth
+    // We only need to sign up the user in Supabase Auth.
+    // The database trigger 'on_auth_user_created' will automatically 
+    // handle the insertions into public.customers and public.user_roles.
     const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -50,35 +52,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (authError) return { error: authError.message };
-
-    if (data.user) {
-      const userId = data.user.id;
-
-      // 2. Create the corresponding customer record in the public.customers table
-      const { error: customerError } = await supabase.from("customers").insert({
-        user_id: userId,
-        full_name: fullName,
-        email: email,
-        phone: phone,
-        order_count: 0,
-        total_spent: 0,
-      });
-      
-      if (customerError) {
-        console.error("Error creating customer profile:", customerError.message);
-      }
-
-      // 3. Assign the 'customer' role in the public.user_roles table
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: userId,
-        role: 'customer',
-      });
-
-      if (roleError) {
-        console.error("Error assigning customer role:", roleError.message);
-      }
-    }
-
     return { error: null };
   }
 
