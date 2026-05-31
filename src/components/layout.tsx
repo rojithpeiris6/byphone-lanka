@@ -27,9 +27,9 @@ export function Header() {
   const nav = [
     { to: "/", label: "Home" },
     { to: "/shop", label: "Shop" },
-    { to: "/shop", label: "Brands" },
-    { to: "/shop", label: "Accessories" },
-    { to: "/shop", label: "Deals" },
+    { to: "/brands", label: "Brands" },
+    { to: "/categories", label: "Categories" },
+    { to: "/deals", label: "Deals" },
     { to: "/contact", label: "Contact Us" },
   ];
 
@@ -74,7 +74,7 @@ export function BottomNav() {
   const items = [
     { to: "/", label: "Home", Icon: Home },
     { to: "/shop", label: "Shop", Icon: LayoutGrid },
-    { to: "/shop", label: "Deals", Icon: Tag },
+    { to: "/deals", label: "Deals", Icon: Tag },
     { to: "/cart", label: "Cart", Icon: ShoppingCart, badge: count },
     { to: "/account", label: "Account", Icon: UserCircle2 },
   ];

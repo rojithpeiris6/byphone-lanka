@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as OrderSuccessRouteImport } from './routes/order-success'
+import { Route as DealsRouteImport } from './routes/deals'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CartRouteImport } from './routes/cart'
@@ -46,6 +48,16 @@ const ShopRoute = ShopRouteImport.update({
 const OrderSuccessRoute = OrderSuccessRouteImport.update({
   id: '/order-success',
   path: '/order-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DealsRoute = DealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -186,6 +198,8 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
+  '/deals': typeof DealsRoute
   '/order-success': typeof OrderSuccessRoute
   '/shop': typeof ShopRoute
   '/admin/brands': typeof AdminBrandsRoute
@@ -215,6 +229,8 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
+  '/deals': typeof DealsRoute
   '/order-success': typeof OrderSuccessRoute
   '/shop': typeof ShopRoute
   '/admin/brands': typeof AdminBrandsRoute
@@ -246,6 +262,8 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
+  '/deals': typeof DealsRoute
   '/order-success': typeof OrderSuccessRoute
   '/shop': typeof ShopRoute
   '/admin/brands': typeof AdminBrandsRoute
@@ -278,6 +296,8 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
+    | '/deals'
     | '/order-success'
     | '/shop'
     | '/admin/brands'
@@ -307,6 +327,8 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
+    | '/deals'
     | '/order-success'
     | '/shop'
     | '/admin/brands'
@@ -337,6 +359,8 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
+    | '/deals'
     | '/order-success'
     | '/shop'
     | '/admin/brands'
@@ -368,6 +392,8 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
   CheckoutRoute: typeof CheckoutRoute
+  ContactRoute: typeof ContactRoute
+  DealsRoute: typeof DealsRoute
   OrderSuccessRoute: typeof OrderSuccessRoute
   ShopRoute: typeof ShopRoute
   ProductSlugRoute: typeof ProductSlugRoute
@@ -387,6 +413,20 @@ declare module '@tanstack/react-router' {
       path: '/order-success'
       fullPath: '/order-success'
       preLoaderRoute: typeof OrderSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deals': {
+      id: '/deals'
+      path: '/deals'
+      fullPath: '/deals'
+      preLoaderRoute: typeof DealsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -627,6 +667,8 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
   CheckoutRoute: CheckoutRoute,
+  ContactRoute: ContactRoute,
+  DealsRoute: DealsRoute,
   OrderSuccessRoute: OrderSuccessRoute,
   ShopRoute: ShopRoute,
   ProductSlugRoute: ProductSlugRoute,
