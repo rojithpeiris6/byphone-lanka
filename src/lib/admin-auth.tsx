@@ -23,28 +23,42 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        // Fetch the role for this user
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
+    let isMounted = true;
 
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? "",
-          created_at: session.user.created_at,
-          role: roleData?.role ?? null,
-        });
+    async function initializeAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (isMounted && session?.user) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+
+          if (isMounted) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email ?? "",
+              created_at: session.user.created_at,
+              role: roleData?.role ?? null,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing admin auth:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
-    });
+    }
 
-    // Listen for auth changes
+    initializeAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
+
       if (session?.user) {
         const { data: roleData } = await supabase
           .from("user_roles")
@@ -63,7 +77,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function signIn(email: string, password: string) {
