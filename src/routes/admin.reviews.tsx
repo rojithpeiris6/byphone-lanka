@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Search, Star, Trash2, CheckCircle2, XCircle, Clock, Filter, MessageSquare, Package, User, MoreVertical } from "lucide-react";
+import { Search, Star, Trash2, CheckCircle2, XCircle, Clock, Filter, MessageSquare, Package, User, MoreVertical, RefreshCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -15,14 +15,14 @@ function ReviewsPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: reviews, isLoading } = useQuery({
+  const { data: reviews, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ["admin-reviews", statusFilter],
     queryFn: async () => {
       let query = supabase
         .from("product_reviews" as any)
         .select(`
           *,
-          products(name, sku, image:product_images(url))
+          products(name, sku, product_images(url))
         `)
         .order("created_at", { ascending: false });
       
@@ -42,22 +42,37 @@ function ReviewsPage() {
   );
 
   async function updateStatus(id: string, status: string) {
+    const loadingToast = toast.loading(`Updating review status...`);
+    
+    // We let the DB handle updated_at via trigger to avoid schema cache issues
     const { error } = await supabase
       .from("product_reviews" as any)
-      .update({ status, updated_at: new Date().toISOString() })
+      .update({ status })
       .eq("id", id);
 
-    if (error) return toast.error(error.message);
+    toast.dismiss(loadingToast);
+
+    if (error) {
+      console.error("Update error:", error);
+      return toast.error(`Failed to update review: ${error.message}`);
+    }
+    
     toast.success(`Review ${status}`);
-    qc.invalidateQueries({ queryKey: ["admin-reviews"] });
+    // Invalidate the root key to refresh all views
+    await qc.invalidateQueries({ queryKey: ["admin-reviews"] });
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to permanently delete this review?")) return;
+    
+    const loadingToast = toast.loading(`Deleting review...`);
     const { error } = await supabase.from("product_reviews" as any).delete().eq("id", id);
+    toast.dismiss(loadingToast);
+
     if (error) return toast.error(error.message);
+    
     toast.success("Review deleted");
-    qc.invalidateQueries({ queryKey: ["admin-reviews"] });
+    await qc.invalidateQueries({ queryKey: ["admin-reviews"] });
   }
 
   const stats = {
@@ -73,6 +88,14 @@ function ReviewsPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Product Reviews</h1>
           <p className="text-sm text-muted-foreground mt-1">Moderate customer feedback and ratings.</p>
         </div>
+        <button 
+          onClick={() => refetch()} 
+          disabled={isLoading || isRefetching}
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card text-sm font-semibold hover:bg-accent disabled:opacity-50 transition-colors"
+        >
+          <RefreshCcw className={cn("size-4", (isLoading || isRefetching) && "animate-spin")} />
+          Refresh
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -116,7 +139,7 @@ function ReviewsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {isLoading ? (
+              {isLoading && !isRefetching ? (
                 <tr><td colSpan={5} className="px-6 py-20 text-center text-muted-foreground">Loading reviews...</td></tr>
               ) : filtered.length === 0 ? (
                 <tr>
@@ -151,7 +174,7 @@ function ReviewsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="size-8 rounded bg-muted overflow-hidden shrink-0">
-                          <img src={r.products?.image?.[0]?.url || ""} alt="" className="size-full object-contain" />
+                          <img src={r.products?.product_images?.[0]?.url || ""} alt="" className="size-full object-contain" />
                         </div>
                         <div className="min-w-0">
                           <div className="font-medium text-[11px] truncate">{r.products?.name}</div>
