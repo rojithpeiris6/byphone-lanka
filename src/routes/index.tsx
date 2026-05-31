@@ -146,7 +146,7 @@ function Home() {
         </div>
         <div className="mt-6 flex lg:grid lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
           {dbCategories?.map((c) => (
-            <Link to="/shop" key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
+            <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
               <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
                 <img src={c.image || ""} alt={c.name} loading="lazy" className="h-3/4 w-3/4 object-contain" />
               </div>
@@ -155,7 +155,7 @@ function Home() {
           ))}
         </div>
         <div className="mt-6 text-center">
-          <Link to="/shop" className="inline-flex items-center gap-1 text-primary text-sm font-bold">VIEW ALL CATEGORIES <ChevronRight className="size-4" /></Link>
+          <Link to="/categories" className="inline-flex items-center gap-1 text-primary text-sm font-bold">VIEW ALL CATEGORIES <ChevronRight className="size-4" /></Link>
         </div>
       </section>
 
@@ -192,12 +192,15 @@ function Home() {
 
       {/* BRANDS */}
       <section className="mx-auto max-w-7xl px-4 mt-14">
-        <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center mb-6">SHOP BY BRAND</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center">SHOP BY BRAND</h2>
+          <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
+        </div>
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
           {dbBrands?.map((b) => (
-            <div key={b} className="aspect-[2/1] rounded-xl border border-border bg-card grid place-items-center text-sm font-bold text-foreground/70 hover:text-primary hover:border-primary transition-colors">
+            <Link to="/shop" search={{ brand: b }} key={b} className="aspect-[2/1] rounded-xl border border-border bg-card grid place-items-center text-sm font-bold text-foreground/70 hover:text-primary hover:border-primary transition-colors">
               {b}
-            </div>
+            </Link>
           ))}
         </div>
       </section>
