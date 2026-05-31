@@ -92,12 +92,13 @@ function Checkout() {
         },
       });
 
-      toast.success("Order placed successfully!", { 
-        description: `Your order number is ${result.orderNumber}. We'll contact you shortly.` 
-      });
+      toast.success("Order placed successfully!");
       
       clear();
-      navigate({ to: "/" });
+      navigate({ 
+        to: "/order-success", 
+        search: { orderNumber: result.orderNumber } 
+      });
     } catch (e: any) {
       toast.error("Order failed", { description: e.message });
     } finally {
