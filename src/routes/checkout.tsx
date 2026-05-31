@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2, Ticket } from "lucide-react";
 import { useCart, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { placeOrder } from "@/lib/api/orders.functions";
 import { validateCoupon } from "@/lib/api/coupons.functions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 
 const SRI_LANKA_DISTRICTS = [
   "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara",
@@ -29,6 +30,7 @@ function Checkout() {
   const navigate = useNavigate();
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
+  const { user } = useAuth();
   
   const [delivery, setDelivery] = useState<"std" | "exp">("std");
   const [payment, setPayment] = useState("cod");
@@ -37,6 +39,44 @@ function Checkout() {
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [activeCoupon, setActiveCoupon] = useState<string | null>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    district: "",
+  });
+
+  // Fetch user profile for auto-fill
+  const { data: profile } = useQuery({
+    queryKey: ["checkout-user-profile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("customers")
+        .select("full_name, phone, email, address, city, district")
+        .eq("user_id", user.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        name: profile.full_name || "",
+        phone: profile.phone || "",
+        email: profile.email || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        district: profile.district || "",
+      });
+    }
+  }, [profile]);
 
   // 1. Fetch real-time product and variant data from DB
   const { data: cartData, isLoading: loadingProducts } = useQuery({
@@ -94,15 +134,6 @@ function Checkout() {
   const deliveryFee = delivery === "exp" ? 490 : 0;
   const totalBeforeDiscount = subtotal + deliveryFee;
   const finalTotal = Math.max(0, totalBeforeDiscount - appliedDiscount);
-
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "",
-    district: "",
-  });
 
   async function handleApplyCoupon() {
     if (!couponCode.trim()) return;
