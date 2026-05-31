@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2, Timer, MessageSquare, Send, Loader2, X } from "lucide-react";
-import { products, formatLKR, useCart, type Product } from "@/lib/shop";
+import { products, formatLKR, useCart } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -75,8 +76,13 @@ function ProductPage() {
   const qc = useQueryClient();
   const [qty, setQty] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(undefined);
-  const [tab, setTab] = useState<"desc" | "reviews" | "warranty">("desc");
+  const [tab, setTab] = useState<"desc" | "reviews" | "warranty" | any>("desc");
   const openAuth = useAuthModalStore((s) => s.open);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Filter unique available images
   const allImages = useMemo(() => {
@@ -113,7 +119,7 @@ function ProductPage() {
     enabled: !!user,
   });
 
-  // Fetch reviews for this product from public.product_reviews
+  // Fetch reviews for this product
   const { data: productReviews, isLoading: loadingReviews } = useQuery({
     queryKey: ["product-reviews-list", p.id],
     queryFn: async () => {
@@ -149,20 +155,13 @@ function ProductPage() {
     queryKey: ["user-has-purchased-product", user?.id, p.id],
     queryFn: async () => {
       if (!user) return false;
-
-      // 1. Get customer profile to link orders back to the auth user
       const { data: profile } = await supabase
         .from("customers")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      // 2. Query delivered orders matching either customer_id or customer_email
-      let query = supabase
-        .from("orders")
-        .select("id")
-        .eq("status", "delivered");
-
+      let query = supabase.from("orders").select("id").eq("status", "delivered");
       if (profile?.id) {
         query = query.or(`customer_id.eq.${profile.id},customer_email.eq.${user.email}`);
       } else if (user.email) {
@@ -175,8 +174,6 @@ function ProductPage() {
       if (ordersError || !orders || orders.length === 0) return false;
 
       const orderIds = orders.map(o => o.id);
-
-      // 3. Check if any of those delivered orders contain the current product
       const { data: items, error: itemsError } = await supabase
         .from("order_items")
         .select("id")
@@ -206,8 +203,6 @@ function ProductPage() {
       if (error) return toast.error("Could not save to wishlist");
       toast.success("Added to wishlist");
     }
-    
-    // Sync UI
     qc.invalidateQueries({ queryKey: ["wishlist", user.id] });
     qc.invalidateQueries({ queryKey: ["customer-wishlist", user.id] });
   };
@@ -218,21 +213,27 @@ function ProductPage() {
   );
 
   const currentPrice = useMemo(() => {
-    const basePrice = p.price;
-    const diff = selectedVariant?.price_diff || 0;
+    const basePrice = Number(p.price) || 0;
+    const diff = Number(selectedVariant?.price_diff) || 0;
     return basePrice + diff;
   }, [p.price, selectedVariant]);
 
   const currentOldPrice = useMemo(() => {
     if (!p.oldPrice) return undefined;
-    const diff = selectedVariant?.price_diff || 0;
-    return p.oldPrice + diff;
+    const diff = Number(selectedVariant?.price_diff) || 0;
+    return Number(p.oldPrice) + diff;
   }, [p.oldPrice, selectedVariant]);
 
   const hasVariants = p.variants && p.variants.length > 0;
-  const isOutOfStock = hasVariants 
-    ? (selectedVariant ? selectedVariant.stock_quantity <= 0 : p.variants.every((v: any) => v.stock_quantity <= 0))
-    : p.stock_quantity <= 0;
+  
+  // Base isOutOfStock logic
+  const isOutOfStock = useMemo(() => {
+    if (hasVariants) {
+      if (selectedVariant) return Number(selectedVariant.stock_quantity) <= 0;
+      return p.variants.every((v: any) => Number(v.stock_quantity) <= 0);
+    }
+    return Number(p.stock_quantity) <= 0;
+  }, [hasVariants, selectedVariant, p.variants, p.stock_quantity]);
 
   const isAddDisabled = isOutOfStock || (hasVariants && !selectedVariantId);
 
@@ -245,7 +246,7 @@ function ProductPage() {
       return;
     }
     add(p.id, selectedVariantId, qty);
-    toast.success("Added to cart", { description: `${qty} × ${p.name}${selectedVariant ? ` (${selectedVariant.storage || selectedVariant.color || 'Variant'})` : ''}` });
+    toast.success("Added to cart", { description: `${qty} × ${p.name}` });
   }
 
   const variantLabel = (v: any) => {
@@ -261,13 +262,7 @@ function ProductPage() {
 
     setIsSubmittingReview(true);
     try {
-      // Fetch user profile metadata
-      const { data: customerProfile } = await supabase
-        .from("customers")
-        .select("full_name")
-        .eq("user_id", user.id)
-        .single();
-
+      const { data: customerProfile } = await supabase.from("customers").select("full_name").eq("user_id", user.id).single();
       const customerName = customerProfile?.full_name || user.email?.split("@")[0] || "Verified Buyer";
 
       const { error } = await supabase
@@ -281,7 +276,6 @@ function ProductPage() {
         });
 
       if (error) throw error;
-
       toast.success("Review submitted! Thank you.");
       setReviewComment("");
       setReviewRating(5);
@@ -327,12 +321,12 @@ function ProductPage() {
               alt={p.name} 
               width={800} 
               height={800} 
-              className={cn("h-full w-full object-contain p-6", isOutOfStock && "grayscale opacity-80")} 
+              className={cn("h-full w-full object-contain p-6", isOutOfStock && isMounted && "grayscale opacity-80")} 
             />
             <div className="absolute top-4 right-4 size-9 grid place-items-center rounded-full bg-background/80 border border-border pointer-events-none shadow-sm backdrop-blur-sm">
               <Maximize2 className="size-4" />
             </div>
-            {isOutOfStock && (
+            {isOutOfStock && isMounted && (
               <div className="absolute inset-0 grid place-items-center bg-black/5">
                 <span className="bg-rose-600 text-white text-xs font-black tracking-widest px-4 py-2 rounded-full uppercase shadow-lg border-2 border-white/20">OUT OF STOCK</span>
               </div>
@@ -370,8 +364,8 @@ function ProductPage() {
               <span className="text-primary font-semibold ml-1">({p.reviews} reviews)</span>
             </div>
             <span className="text-border">|</span>
-            <span className={cn("font-bold uppercase tracking-wider text-xs", isOutOfStock ? "text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100" : "text-[color:var(--color-success)] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100")}>
-              {isOutOfStock ? "Out of Stock" : "In Stock"}
+            <span className={cn("font-bold uppercase tracking-wider text-xs", isOutOfStock && isMounted ? "text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100" : "text-[color:var(--color-success)] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100")}>
+              {isOutOfStock && isMounted ? "Out of Stock" : "In Stock"}
             </span>
           </div>
           <div className="mt-5">
@@ -414,7 +408,7 @@ function ProductPage() {
 
           <div className="mt-6 flex items-center gap-4">
             <span className="text-sm font-semibold">Quantity:</span>
-            <div className={cn("inline-flex items-center border border-border rounded-xl", isOutOfStock && "opacity-50 pointer-events-none")}>
+            <div className={cn("inline-flex items-center border border-border rounded-xl", isOutOfStock && isMounted && "opacity-50 pointer-events-none")}>
               <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-2 hover:bg-muted rounded-l-xl"><Minus className="size-4" /></button>
               <span className="px-4 text-sm font-semibold w-10 text-center">{qty}</span>
               <button onClick={() => setQty(qty + 1)} className="p-2 hover:bg-muted rounded-r-xl"><Plus className="size-4" /></button>
@@ -424,15 +418,15 @@ function ProductPage() {
           <div className="hidden lg:flex mt-6 gap-3">
             <button 
               onClick={handleAdd} 
-              disabled={isAddDisabled}
+              disabled={isAddDisabled && isMounted}
               className={cn(
                 "flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide transition-all uppercase",
-                isOutOfStock 
+                isOutOfStock && isMounted 
                   ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
                   : "bg-primary text-primary-foreground hover:bg-primary-dark shadow-lg shadow-primary/20"
               )}
             >
-              {isOutOfStock ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
+              {isOutOfStock && isMounted ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
             </button>
             <button 
               onClick={toggleWishlist}
@@ -440,7 +434,7 @@ function ProductPage() {
               className={cn(
                 "size-14 grid place-items-center border-2 rounded-2xl transition-all active:scale-95",
                 wishlist 
-                  ? "bg-rose-50 border-rose-500 text-rose-500 shadow-inner" 
+                  ? "bg-rose-50 border-rose-200 text-rose-500 shadow-inner" 
                   : "border-primary/30 text-primary hover:bg-primary-soft"
               )}
             >
@@ -466,7 +460,7 @@ function ProductPage() {
         <div className="py-6">
           {tab === "desc" && (
             <div className="max-w-3xl text-sm leading-relaxed text-muted-foreground space-y-3">
-              <p>{p.description ?? `${p.name} — premium build, flagship performance, and an incredible camera system. Backed by official warranty.`}</p>
+              <p>{p.description ?? `${p.name} — premium build, flagship performance, and an incredible camera system.`}</p>
               {p.highlights && (
                 <ul className="list-disc pl-5 space-y-1.5 text-foreground">
                   {p.highlights.map((h: any) => <li key={h}>{h}</li>)}
@@ -480,7 +474,7 @@ function ProductPage() {
               {user ? (
                 hasReviewedProduct ? (
                   <div className="bg-muted/40 border border-border/50 rounded-2xl p-5 text-center text-sm text-muted-foreground">
-                    You have already submitted a review for this product. Only one review per customer is allowed.
+                    You have already submitted a review for this product.
                   </div>
                 ) : hasPurchasedProduct ? (
                   <div className="bg-primary-soft/50 border border-primary/10 rounded-2xl p-5 sm:p-6 space-y-4">
@@ -510,7 +504,7 @@ function ProductPage() {
                           rows={4}
                           value={reviewComment}
                           onChange={(e) => setReviewComment(e.target.value)}
-                          placeholder="What did you like or dislike about this product? Sharing your authentic experience helps other shoppers make better choices."
+                          placeholder="What did you like or dislike about this product?"
                           required
                           className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:border-primary outline-none transition-all resize-none"
                         />
@@ -521,26 +515,18 @@ function ProductPage() {
                         disabled={isSubmittingReview}
                         className="h-11 px-6 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider hover:bg-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                       >
-                        {isSubmittingReview ? (
-                          <>
-                            <Loader2 className="size-4 animate-spin" /> Submitting...
-                          </>
-                        ) : (
-                          <>
-                            Submit Review <Send className="size-3.5" />
-                          </>
-                        )}
+                        {isSubmittingReview ? <Loader2 className="size-4 animate-spin" /> : <>Submit Review <Send className="size-3.5" /></>}
                       </button>
                     </form>
                   </div>
                 ) : (
                   <div className="bg-muted/40 border border-border/50 rounded-2xl p-5 text-center text-sm text-muted-foreground">
-                    Only verified buyers who have purchased this product can leave a review.
+                    Only verified buyers can leave a review.
                   </div>
                 )
               ) : (
                 <div className="bg-muted/40 border border-border/50 rounded-2xl p-5 text-center text-sm text-muted-foreground">
-                  Please sign in to write a review. Only customers who purchased this product can review.
+                  Please sign in to write a review.
                 </div>
               )}
 
@@ -551,7 +537,7 @@ function ProductPage() {
                   <div className="py-6 text-center text-muted-foreground text-sm">Loading reviews...</div>
                 ) : !productReviews || productReviews.length === 0 ? (
                   <div className="py-6 text-center text-muted-foreground text-sm italic">
-                    No reviews yet. Be the first verified purchaser to leave feedback!
+                    No reviews yet.
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -577,7 +563,7 @@ function ProductPage() {
             </div>
           )}
           {tab === "warranty" && (
-            <p className="max-w-3xl text-sm text-muted-foreground">All products come with 1-year official manufacturer warranty. Visit any byphone.lk store for warranty claims, or contact our 24/7 support team.</p>
+            <p className="max-w-3xl text-sm text-muted-foreground">All products come with 1-year official manufacturer warranty.</p>
           )}
         </div>
       </section>
@@ -587,28 +573,27 @@ function ProductPage() {
         <section className="mt-12">
           <h2 className="text-lg sm:text-xl font-extrabold tracking-tight mb-5">YOU MAY ALSO LIKE</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-            {related.map((r) => <ProductCard key={r.id} p={r} />)}
+            {related.map((r) => <ProductCard key={r.id} p={r as any} />)}
           </div>
         </section>
       )}
 
-      {/* Lightbox / Full Screen Modal */}
+      {/* Lightbox */}
       {isLightboxOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setIsLightboxOpen(false)}
         >
           <button 
-            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-all cursor-pointer"
+            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white rounded-full bg-white/10"
             onClick={() => setIsLightboxOpen(false)}
-            aria-label="Close full screen"
           >
             <X className="size-6" />
           </button>
           <img 
             src={activeImage} 
             alt={p.name} 
-            className="max-h-[90vh] max-w-full object-contain rounded-lg animate-in zoom-in-95 duration-200"
+            className="max-h-[90vh] max-w-full object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()} 
           />
         </div>
@@ -623,22 +608,18 @@ function ProductPage() {
           </div>
           <button 
             onClick={handleAdd} 
-            disabled={isAddDisabled}
+            disabled={isAddDisabled && isMounted}
             className={cn(
               "flex-1 rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2 transition-all uppercase",
-              isOutOfStock 
+              isOutOfStock && isMounted 
                 ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
                 : "bg-primary text-primary-foreground"
             )}
           >
-            {isOutOfStock ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
+            {isOutOfStock && isMounted ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
           </button>
         </div>
       </div>
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
 }
