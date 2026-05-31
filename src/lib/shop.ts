@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import iphone15pro from "@/assets/phone-iphone15pro.jpg";
 import s24ultra from "@/assets/phone-s24ultra.jpg";
 import oneplus12 from "@/assets/phone-oneplus12.jpg";
@@ -168,33 +169,39 @@ type CartState = {
   subtotal: () => number;
 };
 
-export const useCart = create<CartState>((set, get) => ({
-  items: [],
-  isOpen: false,
-  open: () => set({ isOpen: true }),
-  close: () => set({ isOpen: false }),
-  setOpen: (v) => set({ isOpen: v }),
-  add: (productId, variantId, qty = 1) =>
-    set((s) => {
-      const existing = s.items.find((i) => i.productId === productId && i.variantId === variantId);
-      const items = existing
-        ? s.items.map((i) => (i.productId === productId && i.variantId === variantId ? { ...i, qty: i.qty + qty } : i))
-        : [...s.items, { productId, variantId, qty }];
-      return { items, isOpen: true };
+export const useCart = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isOpen: false,
+      open: () => set({ isOpen: true }),
+      close: () => set({ isOpen: false }),
+      setOpen: (v) => set({ isOpen: v }),
+      add: (productId, variantId, qty = 1) =>
+        set((s) => {
+          const existing = s.items.find((i) => i.productId === productId && i.variantId === variantId);
+          const items = existing
+            ? s.items.map((i) => (i.productId === productId && i.variantId === variantId ? { ...i, qty: i.qty + qty } : i))
+            : [...s.items, { productId, variantId, qty }];
+          return { items, isOpen: true };
+        }),
+      remove: (productId, variantId) => set((s) => ({ items: s.items.filter((i) => !(i.productId === productId && i.variantId === variantId)) })),
+      setQty: (productId, variantId, qty) =>
+        set((s) => ({
+          items: s.items.map((i) => (i.productId === productId && i.variantId === variantId ? { ...i, qty } : i)).filter(i => i.qty > 0),
+        })),
+      clear: () => set({ items: [] }),
+      count: () => get().items.reduce((a, b) => a + b.qty, 0),
+      subtotal: () =>
+        get().items.reduce((a, b) => {
+          const p = getProduct(b.productId);
+          if (!p) return a;
+          return a + (p.price * b.qty);
+        }, 0),
     }),
-  remove: (productId, variantId) => set((s) => ({ items: s.items.filter((i) => !(i.productId === productId && i.variantId === variantId)) })),
-  setQty: (productId, variantId, qty) =>
-    set((s) => ({
-      items: s.items.map((i) => (i.productId === productId && i.variantId === variantId ? { ...i, qty } : i)).filter(i => i.qty > 0),
-    })),
-  clear: () => set({ items: [] }),
-  count: () => get().items.reduce((a, b) => a + b.qty, 0),
-  subtotal: () =>
-    get().items.reduce((a, b) => {
-      const p = getProduct(b.productId);
-      if (!p) return a;
-      // If we had real DB products in getProduct, we would check variant price_diff here.
-      // For now, we use the base price. In the route we handle dynamic pricing.
-      return a + (p.price * b.qty);
-    }, 0),
-}));
+    {
+      name: "byphone-cart-storage",
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);

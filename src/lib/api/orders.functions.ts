@@ -26,19 +26,26 @@ export const placeOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { customer, shippingMethod, paymentMethod, items } = data;
 
-    // 1. Calculate totals and fetch current prices to prevent client-side tampering
+    // 1. Calculate totals, validate stock and fetch current prices
     let subtotal = 0;
     const orderItemsToInsert = [];
+    const stockUpdates = [];
 
     for (const item of items) {
-      // Fetch product base price
-      const { data: product } = await supabaseAdmin
+      // Fetch product with current stock
+      const { data: product, error: pError } = await supabaseAdmin
         .from("products")
-        .select("price, name, sku")
+        .select("price, name, sku, stock_quantity")
         .eq("id", item.productId)
         .single();
 
-      if (!product) throw new Error(`Product ${item.productId} not found`);
+      if (pError || !product) throw new Error(`Product ${item.productId} not found`);
+
+      // Basic stock check (for products without variants)
+      // Note: In a full implementation, we would check specific variant stock here
+      if (product.stock_quantity < item.qty) {
+        throw new Error(`Insufficient stock for ${product.name}. Only ${product.stock_quantity} left.`);
+      }
 
       let unitPrice = product.price;
 
@@ -46,13 +53,22 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (item.variantId) {
         const { data: variant } = await supabaseAdmin
           .from("product_variants")
-          .select("price_diff")
+          .select("price_diff, stock_quantity")
           .eq("id", item.variantId)
           .single();
         
         if (variant) {
           unitPrice += variant.price_diff;
+          // Variant stock check
+          if (variant.stock_quantity < item.qty) {
+            throw new Error(`Insufficient stock for ${product.name} variant. Only ${variant.stock_quantity} left.`);
+          }
+          stockUpdates.push({ id: variant.id, table: 'product_variants', qty: item.qty });
         }
+      }
+
+      if (!item.variantId) {
+        stockUpdates.push({ id: product.id, table: 'products', qty: item.qty });
       }
 
       const itemTotal = unitPrice * item.qty;
@@ -107,8 +123,26 @@ export const placeOrder = createServerFn({ method: "POST" })
       .insert(itemsWithOrderId);
 
     if (itemsError) {
-      // In a real app, we'd roll this back in a transaction
       throw new Error(`Order created but items failed: ${itemsError.message}`);
+    }
+
+    // 4. Decrement Stock
+    for (const update of stockUpdates) {
+      const table = update.table === 'products' ? 'products' : 'product_variants';
+      
+      // Fetch current stock one last time to avoid race conditions (simplified)
+      const { data: current } = await supabaseAdmin
+        .from(table)
+        .select("stock_quantity")
+        .eq("id", update.id)
+        .single();
+
+      if (current) {
+        await supabaseAdmin
+          .from(table)
+          .update({ stock_quantity: current.stock_quantity - update.qty })
+          .eq("id", update.id);
+      }
     }
 
     return {
