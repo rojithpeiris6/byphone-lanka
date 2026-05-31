@@ -150,7 +150,7 @@ function Home() {
           {dbCategories?.map((c) => (
             <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
               <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
-                <img src={c.image || ""} alt={c.name} loading="lazy" className="h-3/4 w-3/4 object-contain" />
+                <img src={c.image || ""} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
               </div>
               <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
             </Link>
