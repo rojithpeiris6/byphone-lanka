@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Truck, CreditCard, Share2, Save, 
   Loader2, Globe, Mail, Phone, MapPin, 
-  ShieldCheck, RefreshCcw, Bell, Layout
+  Plus, Trash2, Layout, GripVertical
 } from "lucide-react";
 import { getSettings } from "@/lib/api/settings.functions";
 import { toast } from "sonner";
@@ -32,7 +32,14 @@ function SettingsPage() {
 
   useEffect(() => {
     if (settings) {
-      setForm(settings);
+      // Ensure homepage_hero is an array
+      const initialForm = { ...settings };
+      if (initialForm.homepage_hero && !Array.isArray(initialForm.homepage_hero)) {
+        initialForm.homepage_hero = [initialForm.homepage_hero];
+      } else if (!initialForm.homepage_hero) {
+        initialForm.homepage_hero = [];
+      }
+      setForm(initialForm);
     }
   }, [settings]);
 
@@ -68,6 +75,22 @@ function SettingsPage() {
     }));
   };
 
+  const updateHeroSlide = (index: number, subKey: string, value: any) => {
+    const newHero = [...(form.homepage_hero || [])];
+    newHero[index] = { ...newHero[index], [subKey]: value };
+    setForm((prev: any) => ({ ...prev, homepage_hero: newHero }));
+  };
+
+  const addHeroSlide = () => {
+    const newHero = [...(form.homepage_hero || []), { title: "", description: "", image: "", link: "/shop" }];
+    setForm((prev: any) => ({ ...prev, homepage_hero: newHero }));
+  };
+
+  const removeHeroSlide = (index: number) => {
+    const newHero = (form.homepage_hero || []).filter((_: any, i: number) => i !== index);
+    setForm((prev: any) => ({ ...prev, homepage_hero: newHero }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -84,18 +107,16 @@ function SettingsPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar Nav */}
         <div className="w-full lg:w-64 shrink-0">
           <div className="bg-card border border-border rounded-2xl p-2 sticky top-24">
             <TabButton active={activeTab === 'general'} onClick={() => setActiveTab('general')} icon={Store} label="General" />
             <TabButton active={activeTab === 'homepage'} onClick={() => setActiveTab('homepage')} icon={Layout} label="Homepage" />
             <TabButton active={activeTab === 'shipping'} onClick={() => setActiveTab('shipping')} icon={Truck} label="Shipping" />
-            <TabButton active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} icon={CreditCard} label="Payments" />
+            <TabButton active={activeTab === 'payments'} onClick={() => setActiveTab('payments'} icon={CreditCard} label="Payments" />
             <TabButton active={activeTab === 'social'} onClick={() => setActiveTab('social')} icon={Share2} label="Social Links" />
           </div>
         </div>
 
-        {/* Content Area */}
         <div className="flex-1 space-y-6">
           {activeTab === 'general' && (
             <Section 
@@ -131,26 +152,53 @@ function SettingsPage() {
 
           {activeTab === 'homepage' && (
             <Section 
-              title="Homepage Content" 
-              desc="Customize the main hero section of your homepage."
+              title="Homepage Hero Slides" 
+              desc="Add and manage multiple banners for your homepage carousel."
               onSave={() => handleSave('homepage_hero')}
               isSaving={isSaving}
             >
-              <div className="space-y-6">
-                <ImageUpload 
-                  label="Hero Image" 
-                  value={form.homepage_hero?.image} 
-                  bucket="shop" 
-                  onChange={url => updateForm('homepage_hero', 'image', url)} 
-                />
-                <div className="grid gap-4">
-                  <Field label="Hero Title">
-                    <input className={inputCls} value={form.homepage_hero?.title || ""} onChange={e => updateForm('homepage_hero', 'title', e.target.value)} />
-                  </Field>
-                  <Field label="Hero Description">
-                    <textarea rows={3} className={cn(inputCls, "h-auto py-2")} value={form.homepage_hero?.description || ""} onChange={e => updateForm('homepage_hero', 'description', e.target.value)} />
-                  </Field>
-                </div>
+              <div className="space-y-8">
+                {(form.homepage_hero || []).map((slide: any, index: number) => (
+                  <div key={index} className="p-5 rounded-2xl border border-border bg-muted/10 relative group">
+                    <button 
+                      onClick={() => removeHeroSlide(index)}
+                      className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Remove Slide"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                    <div className="flex items-center gap-2 mb-4">
+                      <GripVertical className="size-4 text-muted-foreground/40" />
+                      <h4 className="font-bold text-sm uppercase tracking-wider">Slide #{index + 1}</h4>
+                    </div>
+                    <div className="space-y-5">
+                      <ImageUpload 
+                        label="Slide Image" 
+                        value={slide.image} 
+                        bucket="shop" 
+                        onChange={url => updateHeroSlide(index, 'image', url)} 
+                      />
+                      <div className="grid gap-4">
+                        <Field label="Title (Dot '.' triggers blue text)">
+                          <input className={inputCls} value={slide.title || ""} onChange={e => updateHeroSlide(index, 'title', e.target.value)} />
+                        </Field>
+                        <Field label="Description">
+                          <textarea rows={2} className={cn(inputCls, "h-auto py-2")} value={slide.description || ""} onChange={e => updateHeroSlide(index, 'description', e.target.value)} />
+                        </Field>
+                        <Field label="Button Link">
+                          <input className={inputCls} placeholder="/shop" value={slide.link || ""} onChange={e => updateHeroSlide(index, 'link', e.target.value)} />
+                        </Field>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <button 
+                  onClick={addHeroSlide}
+                  className="w-full py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-all font-bold text-sm"
+                >
+                  <Plus className="size-4" /> Add New Hero Slide
+                </button>
               </div>
             </Section>
           )}

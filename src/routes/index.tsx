@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle } from "lucide-react";
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import heroDefault from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,27 +38,9 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
   );
 }
 
-function Home() {
-  const now = new Date().toISOString();
-
-  // Fetch Homepage Settings
-  const { data: heroSettings } = useQuery({
-    queryKey: ["home-hero-settings"],
-    queryFn: async () => {
-      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_hero").single();
-      return data?.value as any;
-    }
-  });
-
-  const heroContent = {
-    title: heroSettings?.title || "Latest Phones. Best Prices.",
-    description: heroSettings?.description || "Discover the newest smartphones from top brands at unbeatable prices. 100% original with official warranty.",
-    image: heroSettings?.image || heroDefault
-  };
-
-  // Logic to split title at first dot and color the rest blue
+function HeroSlide({ slide }: { slide: any }) {
   const renderTitle = () => {
-    const title = heroContent.title;
+    const title = slide.title || "Latest Phones. Best Prices.";
     const dotIndex = title.indexOf('.');
     if (dotIndex === -1) return title;
 
@@ -69,6 +54,70 @@ function Home() {
       </>
     );
   };
+
+  return (
+    <div className="flex-[0_0_100%] min-w-0 relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-soft via-primary-soft to-blue-100/60">
+      <div className="grid lg:grid-cols-2 items-center">
+        <div className="px-6 sm:px-10 py-10 sm:py-16 lg:py-20">
+          <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-full px-3 py-1 text-[11px] font-bold tracking-wide">
+            <Sparkles className="size-3" /> NEW ARRIVAL
+          </span>
+          <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+            {renderTitle()}
+          </h1>
+          <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
+            {slide.description || "Discover the newest smartphones from top brands at unbeatable prices."}
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link to={slide.link || "/shop"} className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-bold hover:bg-primary-dark transition-colors shadow-[var(--shadow-soft)]">
+              SHOP NOW <ArrowRight className="size-4" />
+            </Link>
+            <Link to="/shop" className="inline-flex items-center gap-2 bg-background text-foreground rounded-full px-6 py-3 text-sm font-bold border border-border hover:border-primary hover:text-primary transition-colors">
+              View Deals
+            </Link>
+          </div>
+        </div>
+        <div className="relative h-64 sm:h-80 lg:h-[520px]">
+          <img src={slide.image || heroDefault} alt={slide.title} className="absolute inset-0 h-full w-full object-cover object-center" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Home() {
+  const now = new Date().toISOString();
+
+  // Fetch Homepage Settings
+  const { data: heroSettings } = useQuery({
+    queryKey: ["home-hero-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_hero").single();
+      const val = data?.value;
+      return (Array.isArray(val) ? val : val ? [val] : []) as any[];
+    }
+  });
+
+  const slides = heroSettings && heroSettings.length > 0 ? heroSettings : [{ 
+    title: "Latest Phones. Best Prices.", 
+    description: "Discover the newest smartphones from top brands at unbeatable prices.", 
+    image: heroDefault,
+    link: "/shop"
+  }];
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, skipSnaps: false }, [Autoplay({ delay: 5000, stopOnInteraction: false })]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+  }, [emblaApi, onSelect]);
 
   // Helper to get active flash sale product IDs
   const { data: activeFlashSaleIds } = useQuery({
@@ -209,39 +258,31 @@ function Home() {
 
   return (
     <div>
-      {/* HERO */}
+      {/* HERO SLIDER */}
       <section className="mx-auto max-w-7xl px-4 pt-4 sm:pt-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-soft via-primary-soft to-blue-100/60">
-          <div className="grid lg:grid-cols-2 items-center">
-            <div className="px-6 sm:px-10 py-10 sm:py-16 lg:py-20">
-              <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-full px-3 py-1 text-[11px] font-bold tracking-wide">
-                <Sparkles className="size-3" /> NEW ARRIVAL
-              </span>
-              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
-                {renderTitle()}
-              </h1>
-              <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
-                {heroContent.description}
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link to="/shop" className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-bold hover:bg-primary-dark transition-colors shadow-[var(--shadow-soft)]">
-                  SHOP NOW <ArrowRight className="size-4" />
-                </Link>
-                <Link to="/shop" className="inline-flex items-center gap-2 bg-background text-foreground rounded-full px-6 py-3 text-sm font-bold border border-border hover:border-primary hover:text-primary transition-colors">
-                  View Deals
-                </Link>
-              </div>
-              <div className="mt-8 flex items-center gap-1.5">
-                <span className="h-1.5 w-8 rounded-full bg-primary" />
-                <span className="h-1.5 w-2 rounded-full bg-primary/30" />
-                <span className="h-1.5 w-2 rounded-full bg-primary/30" />
-              </div>
-            </div>
-            <div className="relative h-64 sm:h-80 lg:h-[520px]">
-              <img src={heroContent.image} alt="Hero Banner" className="absolute inset-0 h-full w-full object-cover object-center" />
-            </div>
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex">
+            {slides.map((slide, i) => (
+              <HeroSlide key={i} slide={slide} />
+            ))}
           </div>
         </div>
+        
+        {/* Indicators */}
+        {slides.length > 1 && (
+          <div className="flex justify-center gap-1.5 mt-4">
+            {slides.map((_, i) => (
+              <button 
+                key={i} 
+                onClick={() => emblaApi?.scrollTo(i)}
+                className={cn(
+                  "h-1.5 transition-all rounded-full",
+                  selectedIndex === i ? "w-8 bg-primary" : "w-2 bg-primary/20"
+                )} 
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* TRUST BAR */}
