@@ -71,11 +71,12 @@ function Home() {
         .select(`
           *,
           brands(name),
-          categories(name)
+          categories(name),
+          product_images(url)
         `)
         .eq("status", "active")
         .order("rating", { ascending: false })
-        .order("stock_quantity", { ascending: false }) // Prioritize in-stock items
+        .order("stock_quantity", { ascending: false })
         .limit(10);
       if (error) throw error;
       
@@ -84,6 +85,7 @@ function Home() {
         ...p,
         brand: p.brands?.name || "Unknown Brand",
         category: p.categories?.name || "General",
+        image: p.product_images?.[0]?.url || "",
         oldPrice: p.discount_price ? p.price : undefined,
         price: p.discount_price || p.price,
       }));
