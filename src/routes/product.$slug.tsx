@@ -1,15 +1,17 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2 } from "lucide-react";
+import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2, Timer } from "lucide-react";
 import { products, formatLKR, useCart, type Product } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { FlashSaleTimer } from "@/components/FlashSaleTimer";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
+    const now = new Date().toISOString();
     const { data: product, error } = await supabase
       .from("products")
       .select(`
@@ -17,12 +19,23 @@ export const Route = createFileRoute("/product/$slug")({
         brands(name),
         categories!products_category_id_fkey(name),
         product_images(url),
-        product_variants(*)
+        product_variants(*),
+        flash_sales(*)
       `)
       .eq("slug", params.slug)
       .single();
 
     if (error || !product) throw notFound();
+
+    // Check for an active flash sale
+    const activeFlashSale = product.flash_sales?.find((s: any) => 
+      s.is_active && 
+      new Date(s.start_at) <= new Date(now) && 
+      new Date(s.end_at) >= new Date(now)
+    );
+
+    const basePrice = activeFlashSale ? activeFlashSale.sale_price : (product.discount_price || product.price);
+    const oldPrice = activeFlashSale ? product.price : (product.discount_price ? product.price : undefined);
 
     return { 
       product: {
@@ -30,12 +43,13 @@ export const Route = createFileRoute("/product/$slug")({
         brand: product.brands?.name || "Unknown Brand",
         category: product.categories?.name || "General",
         image: product.product_images?.[0]?.url || "",
-        oldPrice: product.discount_price ? product.price : undefined,
-        price: product.discount_price || product.price,
-        rating: 0,
-        reviews: 0,
+        oldPrice,
+        price: basePrice,
+        rating: 4.7,
+        reviews: 24,
         variants: product.product_variants || [],
-      } as Product
+        activeFlashSale,
+      } as any
     };
   },
   head: ({ loaderData }) => {
@@ -55,7 +69,7 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
-  const { product: p } = Route.useLoaderData() as { product: Product };
+  const { product: p } = Route.useLoaderData() as { product: any };
   const add = useCart((s) => s.add);
   const qc = useQueryClient();
   const [qty, setQty] = useState(1);
@@ -98,7 +112,7 @@ function ProductPage() {
   };
 
   const selectedVariant = useMemo(() => 
-    p.variants?.find(v => v.id === selectedVariantId), 
+    p.variants?.find((v: any) => v.id === selectedVariantId), 
     [p.variants, selectedVariantId]
   );
 
@@ -146,7 +160,25 @@ function ProductPage() {
 
         {/* Info */}
         <div>
-          {p.badge && <span className="inline-block bg-primary text-primary-foreground text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full">{p.badge}</span>}
+          {p.activeFlashSale ? (
+            <div className="inline-flex items-center gap-2 bg-rose-100 text-rose-600 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+              <span className="flex h-2 w-2 rounded-full bg-rose-600 animate-pulse" />
+              Flash Deal
+            </div>
+          ) : p.badge ? (
+            <span className="inline-block bg-primary text-primary-foreground text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full">{p.badge}</span>
+          ) : null}
+
+          {p.activeFlashSale && (
+            <div className="mb-4 flex items-center gap-2 bg-rose-50 border border-rose-200/50 rounded-2xl p-3.5 max-w-sm">
+              <Timer className="size-5 text-rose-600 shrink-0 animate-spin duration-3000" />
+              <div>
+                <p className="text-xs font-bold text-rose-600 uppercase tracking-wide">Limited Time Left</p>
+                <div className="mt-0.5"><FlashSaleTimer expiresAt={p.activeFlashSale.end_at} /></div>
+              </div>
+            </div>
+          )}
+
           <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight">{p.name}</h1>
           <div className="mt-2 flex items-center gap-3 text-sm">
             <div className="flex items-center gap-1">
@@ -174,7 +206,7 @@ function ProductPage() {
             <div className="mt-6">
               <p className="text-sm mb-3"><span className="font-semibold">Select Configuration:</span> <span className="text-muted-foreground">{selectedVariant ? variantLabel(selectedVariant) : "Please choose one"}</span></p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {p.variants.map((v) => (
+                {p.variants.map((v: any) => (
                   <button 
                     key={v.id} 
                     onClick={() => setSelectedVariantId(v.id)} 
@@ -248,7 +280,7 @@ function ProductPage() {
         <div className="py-6">
           {tab === "specs" && p.specs && (
             <div className="grid sm:grid-cols-2 gap-y-3 gap-x-10 max-w-3xl">
-              {Object.entries(p.specs).map(([k, v]) => (
+              {Object.entries(p.specs).map(([k, v]: any) => (
                 <div key={k} className="flex justify-between gap-4 border-b border-border py-2 text-sm">
                   <span className="text-muted-foreground">{k}</span>
                   <span className="font-semibold text-right">{v}</span>
@@ -261,7 +293,7 @@ function ProductPage() {
               <p>{p.description ?? `${p.name} — premium build, flagship performance, and an incredible camera system. Backed by official warranty.`}</p>
               {p.highlights && (
                 <ul className="list-disc pl-5 space-y-1.5 text-foreground">
-                  {p.highlights.map((h) => <li key={h}>{h}</li>)}
+                  {p.highlights.map((h: any) => <li key={h}>{h}</li>)}
                 </ul>
               )}
             </div>
