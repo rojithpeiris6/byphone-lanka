@@ -288,7 +288,7 @@ function Home() {
           </div>
           <div className="flex overflow-x-auto no-scrollbar gap-3 sm:gap-5 pb-4">
             {dbFlashSales.map((p: any) => (
-              <div key={p.id} className="min-w-[calc(50%-0.75rem)] sm:min-w-[calc(33.333%-1rem)] lg:min-w-[calc(25%-0.9375rem)] flex-shrink-0 group relative">
+              <div key={p.id} className="min-w-[calc(45%-0.5rem)] sm:min-w-[calc(23%-0.5rem)] md:min-w-[calc(23%-0.5rem)] lg:min-w-[calc(19%-0.5rem)] flex-shrink-0 group relative">
                 <div className="absolute top-2.5 right-2.5 z-20 bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-lg border border-rose-500/30">
                   <FlashSaleTimer expiresAt={p.endDate || ""} className="text-white text-xs sm:text-xs" />
                 </div>
