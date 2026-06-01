@@ -147,6 +147,187 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          id: string
+          customer_id: string | null
+          total: number
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id?: string | null
+          total: number
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          customer_id?: string | null
+          total?: number
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string
+          product_id: string
+          quantity: number
+          price: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          product_id: string
+          quantity: number
+          price: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          product_id?: string
+          quantity?: number
+          price?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      coupons: {
+        Row: {
+          id: string
+          code: string
+          status: string
+          min_order_amount: number
+          usage_limit: number | null
+          used_count: number
+          discount_type: string
+          discount_value: number
+          max_discount_amount: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          status?: string
+          min_order_amount?: number
+          usage_limit?: number | null
+          used_count?: number
+          discount_type: string
+          discount_value: number
+          max_discount_amount?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          status?: string
+          min_order_amount?: number
+          usage_limit?: number | null
+          used_count?: number
+          discount_type?: string
+          discount_value?: number
+          max_discount_amount?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      flash_sales: {
+        Row: {
+          id: string
+          product_id: string
+          sale_price: number
+          is_active: boolean
+          start_at: string
+          end_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          sale_price: number
+          is_active?: boolean
+          start_at: string
+          end_at: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          sale_price?: number
+          is_active?: boolean
+          start_at?: string
+          end_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flash_sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      settings: {
+        Row: {
+          key: string
+          value: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          value: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          value?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       wishlist: {
         Row: {
           id: string
@@ -424,7 +605,7 @@ export type Tables<
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
         DefaultSchema["Views"])
     ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[TableName] extends {
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
       Row: infer R
     }
     ? R
@@ -451,7 +632,7 @@ export type TablesInsert<
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[TableName] extends {
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
       Insert: infer I
     }
     ? I
@@ -478,7 +659,7 @@ export type TablesUpdate<
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[TableName] extends {
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
       Update: infer U
     }
     ? U
@@ -499,7 +680,7 @@ export type Enums<
   }
     ? (DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"])[EnumName]
     : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? (DefaultSchema["Enums"])[EnumName]
+    ? (DefaultSchema["Enums"])[DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
@@ -509,14 +690,14 @@ export type CompositeTypes<
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
+> = PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? (DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["CompositeTypes"])[CompositeTypeName]
-    : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? (DefaultSchema["CompositeTypes"])[CompositeTypeName]
+    ? (DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"])[CompositeTypeName]
+    : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? (DefaultSchema["CompositeTypes"])[PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
