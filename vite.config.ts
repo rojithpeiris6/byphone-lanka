@@ -6,7 +6,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [
     tsconfigPaths(),
-    tanstackStart(),
+    tanstackStart(), // 👈 අර අවුල් සහගත server කෑල්ල සම්පූර්ණයෙන්ම අයින් කළා
     react(),
   ],
 });
