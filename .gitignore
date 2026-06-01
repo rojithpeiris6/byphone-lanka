@@ -32,3 +32,6 @@ dist-ssr
 *.sw?
 .env
 .dyad/
+
+# Local Netlify folder
+.netlify
