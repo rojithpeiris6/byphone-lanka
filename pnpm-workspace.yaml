@@ -373,6 +373,7 @@ allowBuilds:
   zopflipng-bin: true
   # dyad-default-allow-builds end
 
+minimumReleaseAgeExclude:
+  - '@cloudflare/workers-types@4.20260601.1'
 packages:
   - .
-minimumReleaseAge: 1440
