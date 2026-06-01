@@ -1,9 +1,0 @@
-name = "byphonelk"
-compatibility_date = "2026-06-01"
-compatibility_flags = ["nodejs_compat"]
-
-# ⚠️ Cloudflare Pages සඳහා මෙම ලයින් එක අනිවාර්යයෙන්ම අවශ්‍යයි!
-pages_build_output_dir = ".output/public"
-
-[observability]
-enabled = true
