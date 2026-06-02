@@ -334,7 +334,7 @@ function Home() {
           <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-background text-foreground rounded-full px-5 py-2.5 text-sm font-bold">
             LEARN MORE <ChevronRight className="size-4" />
           </Link>
-          <div className="absolute -right-6 -bottom-6 opacity-30 text-[180px] leading-none">ðŸ“±</div>
+          <div className="absolute -right-6 -bottom-6 opacity-30 text-[180px] leading-none"></div>
         </div>
         <div className="relative overflow-hidden rounded-3xl bg-primary-soft p-7 sm:p-9">
           <p className="text-[11px] font-bold tracking-widest text-primary">SPECIAL OFFERS</p>
@@ -342,7 +342,7 @@ function Home() {
           <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-5 py-2.5 text-sm font-bold">
             SHOP DEALS <ChevronRight className="size-4" />
           </Link>
-          <div className="absolute -right-2 -bottom-4 text-[140px] leading-none">ðŸ·ï¸</div>
+          <div className="absolute -right-2 -bottom-4 text-[140px] leading-none"></div>
         </div>
       </section>
 

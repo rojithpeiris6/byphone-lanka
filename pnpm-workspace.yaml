@@ -66,6 +66,7 @@ allowBuilds:
   "@opensearch-project/oui": true
   "@pact-foundation/pact-node": true
   "@paloaltonetworks/postman-code-generators": true
+  '@parcel/watcher': set this to true or false
   "@pdftron/pdfnet-node": true
   "@percy/core": true
   "@pnpm/exe": true

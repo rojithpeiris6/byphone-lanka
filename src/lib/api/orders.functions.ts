@@ -157,7 +157,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         total,
         payment_method: paymentMethod,
         payment_provider: paymentProvider || null,
-        payment_status: paymentMethod === "cod" ? "pending" : "paid",
+        payment_status: "pending",
         status: "pending",
       })
       .select()

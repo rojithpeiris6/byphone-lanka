@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useEffect } from "react";
-import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2, Ticket, Check } from "lucide-react";
+import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2, Ticket } from "lucide-react";
 import { useCart, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
 import { placeOrder } from "@/lib/api/orders.functions";
+import { createPaddleTransaction } from "@/lib/api/paddle.functions";
 import { validateCoupon } from "@/lib/api/coupons.functions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,15 +33,31 @@ function Checkout() {
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const { user } = useAuth();
-  
+
   const [delivery, setDelivery] = useState<"std" | "exp">("std");
   const [payment, setPayment] = useState("card");
-  const [provider, setProvider] = useState<"payhere" | "paypal">("payhere");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [activeCoupon, setActiveCoupon] = useState<string | null>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [paddle, setPaddle] = useState<any>(null);
+
+  useEffect(() => {
+    // Dynamically import to avoid SSR issues if any
+    import("@paddle/paddle-js").then(({ initializePaddle }) => {
+      initializePaddle({
+        environment: import.meta.env.VITE_PADDLE_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
+        token: import.meta.env.VITE_PADDLE_CLIENT_TOKEN || '',
+      }).then(
+        (paddleInstance) => {
+          if (paddleInstance) {
+            setPaddle(paddleInstance);
+          }
+        }
+      );
+    });
+  }, []);
 
   const [form, setForm] = useState({
     name: "",
@@ -83,7 +100,7 @@ function Checkout() {
     queryKey: ["checkout-data", items],
     queryFn: async () => {
       if (items.length === 0) return { products: [], variants: {} };
-      
+
       const productIds = items.map(i => i.productId);
       const variantIds = items.filter(i => i.variantId).map(i => i.variantId!).filter(Boolean);
       const now = new Date().toISOString();
@@ -103,11 +120,11 @@ function Checkout() {
       const variantMap: Record<string, any> = {};
       dbVariants?.forEach(v => { variantMap[v.id] = v; });
 
-      return { 
+      return {
         products: (dbProducts ?? []).map(p => {
-          const activeFlash = p.flash_sales?.find((s: any) => 
-            s.is_active && 
-            new Date(s.start_at) <= new Date(now) && 
+          const activeFlash = p.flash_sales?.find((s: any) =>
+            s.is_active &&
+            new Date(s.start_at) <= new Date(now) &&
             new Date(s.end_at) >= new Date(now)
           );
           return {
@@ -116,14 +133,14 @@ function Checkout() {
             active_flash_sale: activeFlash,
           };
         }),
-        variants: variantMap 
+        variants: variantMap
       };
     },
   });
 
   const subtotal = useMemo(() => {
     if (!cartData?.products) return 0;
-    
+
     return items.reduce((acc, item) => {
       const product = cartData.products.find(p => p.id === item.productId);
       if (!product) return acc;
@@ -165,7 +182,7 @@ function Checkout() {
   async function handlePlaceOrder() {
     const required = ["name", "phone", "email", "address", "city", "district"];
     const missing = required.filter(key => !form[key as keyof typeof form]);
-    
+
     if (missing.length > 0) {
       toast.error("Please fill in all required fields");
       return;
@@ -190,7 +207,6 @@ function Checkout() {
           },
           shippingMethod: delivery,
           paymentMethod: payment,
-          paymentProvider: payment === "card" ? provider : undefined,
           items: items.map(i => ({
             productId: i.productId,
             variantId: i.variantId,
@@ -199,16 +215,39 @@ function Checkout() {
         },
       });
 
-      toast.success("Order placed successfully!");
-      clear();
-      navigate({ 
-        to: "/order-success", 
-        search: { orderNumber: result.orderNumber } 
-      });
+      if (payment === "card") {
+        if (!paddle) {
+          throw new Error("Payment gateway is initializing, please try again in a moment.");
+        }
+
+        const txResult = await createPaddleTransaction({
+          data: { orderId: result.orderId }
+        });
+
+        toast.loading("Opening secure checkout...", { id: "paddle-checkout" });
+        clear();
+
+        paddle.Checkout.open({
+          transactionId: txResult.transactionId,
+          settings: {
+            displayMode: "overlay",
+            theme: "light",
+            successUrl: `${window.location.origin}/order-success?orderNumber=${result.orderNumber}`,
+          }
+        });
+        toast.dismiss("paddle-checkout");
+      } else {
+        toast.success("Order placed successfully!");
+        clear();
+        navigate({
+          to: "/order-success",
+          search: { orderNumber: result.orderNumber }
+        });
+      }
     } catch (e: any) {
       console.error("Order error:", e);
-      toast.error("Order failed", { 
-        description: e.message || "An unexpected error occurred. Please try again." 
+      toast.error("Order failed", {
+        description: e.message || "An unexpected error occurred. Please try again."
       });
     } finally {
       setIsSubmitting(false);
@@ -229,20 +268,20 @@ function Checkout() {
               <h2 className="text-lg font-extrabold">Shipping Information</h2>
             </div>
             <div className="mt-5 grid sm:grid-cols-2 gap-4">
-              <Field label="Full Name" placeholder="Enter your full name" full 
+              <Field label="Full Name" placeholder="Enter your full name" full
                 value={form.name} onChange={(v) => setForm(f => ({ ...f, name: v }))} />
-              <Field label="Phone Number" placeholder="07X XXX XXXX" 
+              <Field label="Phone Number" placeholder="07X XXX XXXX"
                 value={form.phone} onChange={(v) => setForm(f => ({ ...f, phone: v }))} />
-              <Field label="Email Address" placeholder="youremail@gmail.com" type="email" 
+              <Field label="Email Address" placeholder="youremail@gmail.com" type="email"
                 value={form.email} onChange={(v) => setForm(f => ({ ...f, email: v }))} />
-              <Field label="Address" placeholder="House no, Street name, Area" full 
+              <Field label="Address" placeholder="House no, Street name, Area" full
                 value={form.address} onChange={(v) => setForm(f => ({ ...f, address: v }))} />
-              <Field label="City / Town" placeholder="Enter your city" 
+              <Field label="City / Town" placeholder="Enter your city"
                 value={form.city} onChange={(v) => setForm(f => ({ ...f, city: v }))} />
               <div>
                 <label className="text-sm font-semibold mb-1.5 block">District <span className="text-destructive">*</span></label>
-                <select 
-                  value={form.district} 
+                <select
+                  value={form.district}
                   onChange={(e) => setForm(f => ({ ...f, district: e.target.value }))}
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
                 >
@@ -264,61 +303,34 @@ function Checkout() {
               <div className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-bold">2</div>
               <h2 className="text-lg font-extrabold">Payment Method</h2>
             </div>
-            
+
             <div className="mt-5 space-y-4">
               <div className="grid gap-3">
-                <PayOption 
-                  id="card" 
-                  value={payment} 
-                  onChange={setPayment} 
-                  Icon={CreditCard} 
-                  title="Card Payment" 
-                  sub="Visa, Mastercard via Secure Gateways" 
-                  right="INSTANT" 
+                <PayOption
+                  id="card"
+                  value={payment}
+                  onChange={setPayment}
+                  Icon={CreditCard}
+                  title="Card Payment"
+                  sub="Visa, Mastercard via Secure Gateways"
+                  right="INSTANT"
                 />
-                
-                {payment === "card" && (
-                  <div className="ml-8 grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
-                    <button 
-                      onClick={() => setProvider("payhere")}
-                      className={cn(
-                        "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all",
-                        provider === "payhere" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className="h-6 flex items-center"><span className="text-sm font-black italic text-[#003087]">Pay<span className="text-[#009cde]">Here</span></span></div>
-                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Local Gateway</span>
-                      {provider === "payhere" && <div className="absolute top-2 right-2"><Check className="size-3 text-primary" /></div>}
-                    </button>
-                    <button 
-                      onClick={() => setProvider("paypal")}
-                      className={cn(
-                        "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all relative",
-                        provider === "paypal" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className="h-6 flex items-center"><span className="text-sm font-black italic text-[#003087]">Pay<span className="text-[#009cde]">Pal</span></span></div>
-                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Global Gateway</span>
-                      {provider === "paypal" && <div className="absolute top-2 right-2"><Check className="size-3 text-primary" /></div>}
-                    </button>
-                  </div>
-                )}
 
-                <PayOption 
-                  id="cod" 
-                  value={payment} 
-                  onChange={setPayment} 
-                  Icon={Banknote} 
-                  title="Cash on Delivery" 
-                  sub="Pay when you receive your order" 
+                <PayOption
+                  id="cod"
+                  value={payment}
+                  onChange={setPayment}
+                  Icon={Banknote}
+                  title="Cash on Delivery"
+                  sub="Pay when you receive your order"
                 />
               </div>
             </div>
 
             <div className="mt-8 flex items-center justify-between">
               <Link to="/cart" className="text-sm font-semibold text-primary inline-flex items-center gap-1">â† Back to Cart</Link>
-              <button 
-                onClick={handlePlaceOrder} 
+              <button
+                onClick={handlePlaceOrder}
                 disabled={isSubmitting || loadingProducts}
                 className="bg-primary text-primary-foreground rounded-xl px-10 py-3.5 text-sm font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95"
               >
@@ -351,7 +363,7 @@ function Checkout() {
                   const p = cartData?.products.find(prod => prod.id === i.productId);
                   if (!p) return null;
                   const variant = i.variantId ? cartData?.variants[i.variantId] : null;
-                  
+
                   const basePrice = p.active_flash_sale?.sale_price || p.discount_price || p.price;
                   const finalPrice = basePrice + (variant?.price_diff || 0);
 
@@ -372,7 +384,7 @@ function Checkout() {
             <div className="mt-4 pt-4 border-t border-border space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatLKR(subtotal)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>{deliveryFee === 0 ? "Free" : formatLKR(deliveryFee)}</span></div>
-              
+
               {activeCoupon && (
                 <div className="flex justify-between text-emerald-600 font-semibold">
                   <span className="flex items-center gap-1">
@@ -392,14 +404,14 @@ function Checkout() {
             <div className="mt-5 p-3 rounded-xl bg-muted/50 border border-border space-y-2">
               <label className="text-[11px] font-bold uppercase text-muted-foreground block">Promo Code</label>
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Enter code" 
+                <input
+                  type="text"
+                  placeholder="Enter code"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
-                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" 
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                 />
-                <button 
+                <button
                   onClick={handleApplyCoupon}
                   disabled={isValidatingCoupon}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-primary-dark disabled:opacity-50 transition-colors"
@@ -428,12 +440,12 @@ function Field({ label, placeholder, type = "text", full, value, onChange }: { l
   return (
     <div className={full ? "sm:col-span-2" : ""}>
       <label className="text-sm font-semibold mb-1.5 block">{label} <span className="text-destructive">*</span></label>
-      <input 
-        type={type} 
-        placeholder={placeholder} 
-        value={value} 
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" 
+        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
       />
     </div>
   );

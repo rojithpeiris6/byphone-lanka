@@ -16,7 +16,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
   const [mode, setMode] = useState<AuthMode>('login');
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  
+
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -78,10 +78,10 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
               {mode === 'login' ? 'Welcome Back' : step === 1 ? 'Create Account' : 'Complete Profile'}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {mode === 'login' 
-                ? 'Sign in to access your account' 
-                : step === 1 
-                  ? 'Join buyphone.lk for a better shopping experience' 
+              {mode === 'login'
+                ? 'Sign in to access your account'
+                : step === 1
+                  ? 'Join buyphone.lk for a better shopping experience'
                   : 'Almost there! Just one more detail.'}
             </p>
           </DialogHeader>
@@ -92,7 +92,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input 
+                  <input
                     name="email" type="email" required value={form.email} onChange={handleInputChange}
                     placeholder="john@example.com"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
@@ -103,14 +103,14 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input 
+                  <input
                     name="password" type="password" required value={form.password} onChange={handleInputChange}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••••"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   />
                 </div>
               </div>
-              <button 
+              <button
                 disabled={loading}
                 className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:bg-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
@@ -125,7 +125,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Full Name</label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <input 
+                      <input
                         name="fullName" required value={form.fullName} onChange={handleInputChange}
                         placeholder="John Doe"
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
@@ -136,7 +136,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <input 
+                      <input
                         name="email" type="email" required value={form.email} onChange={handleInputChange}
                         placeholder="john@example.com"
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
@@ -147,14 +147,14 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Password</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <input 
+                      <input
                         name="password" type="password" required value={form.password} onChange={handleInputChange}
                         placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                       />
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:bg-primary-dark transition-all flex items-center justify-center gap-2"
                   >
                     Next <ArrowRight className="size-4" />
@@ -166,7 +166,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Phone Number</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <input 
+                      <input
                         name="phone" required value={form.phone} onChange={handleInputChange}
                         placeholder="07X XXX XXXX"
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
@@ -174,14 +174,14 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setStep(1)}
                       className="flex-1 py-3 border border-border rounded-xl text-sm font-bold hover:bg-accent transition-all"
                     >
                       Back
                     </button>
-                    <button 
+                    <button
                       disabled={loading}
                       className="flex-[2] py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:bg-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
@@ -196,7 +196,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
           <div className="mt-8 pt-6 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">
               {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
-              <button 
+              <button
                 onClick={() => {
                   setMode(mode === 'login' ? 'register' : 'login');
                   setStep(1);

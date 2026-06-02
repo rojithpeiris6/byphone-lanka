@@ -147,6 +147,53 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_records: {
+        Row: {
+          id: string
+          order_id: string
+          transaction_id: string
+          provider: string
+          amount: number
+          currency: string
+          status: string
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          transaction_id: string
+          provider?: string
+          amount: number
+          currency?: string
+          status?: string
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          transaction_id?: string
+          provider?: string
+          amount?: number
+          currency?: string
+          status?: string
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_records_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       orders: {
         Row: {
           id: string
