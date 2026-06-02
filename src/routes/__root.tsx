@@ -72,12 +72,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
       { property: "og:description", content: "Buy 100% genuine smartphones, tablets, smartwatches, and tech accessories at buyphone.lk. Enjoy islandwide free delivery and official warranty." },
       { property: "og:url", content: "https://buyphone.lk" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
       { property: "og:image:alt", content: "buyphone.lk Online Store" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
       { name: "twitter:description", content: "Buy 100% genuine smartphones, tablets, and tech accessories with islandwide free delivery in Sri Lanka." },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
+
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -95,8 +94,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-WXCMVZ4M');` }} />
+        <HeadContent />
+      </head>
+      <body>
+        <noscript dangerouslySetInnerHTML={{ __html: `<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WXCMVZ4M" height="0" width="0" style="display:none;visibility:hidden"></iframe>` }} />
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }

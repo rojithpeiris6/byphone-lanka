@@ -50,9 +50,9 @@ export function Header() {
       <AnnounceBar />
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-6">
         <Link to="/" className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary shrink-0">
-          buyphone<span className="text-foreground">.lk</span>
+          Buyphone<span className="text-foreground">.lk</span>
         </Link>
-        
+
         <nav className="hidden lg:flex items-center gap-7 text-sm font-medium">
           {nav.map((n, i) => (
             <Link key={i} to={n.to} className="text-foreground/80 hover:text-primary transition-colors">{n.label}</Link>
@@ -61,7 +61,7 @@ export function Header() {
 
         <div className="flex items-center gap-1 sm:gap-2 text-foreground">
           <form onSubmit={handleSearch} className="hidden md:flex relative items-center">
-            <input 
+            <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -71,8 +71,8 @@ export function Header() {
             <Search className="absolute left-3 size-4 text-muted-foreground" />
           </form>
           <button aria-label="Search" onClick={() => navigate({ to: '/search', search: { q: searchQuery } })} className="md:hidden p-2 rounded-full hover:bg-secondary transition-colors"><Search className="size-5" /></button>
-          <button 
-            aria-label="Account" 
+          <button
+            aria-label="Account"
             onClick={() => user ? navigate({ to: '/account' }) : openAuthModal()}
             className="p-2 rounded-full hover:bg-secondary transition-colors hidden sm:inline-flex"
           >
@@ -116,7 +116,7 @@ export function BottomNav() {
       <div className="grid grid-cols-5">
         {items.map(({ to, label, Icon, badge }, i) => {
           const active = (to === "/" ? path === "/" : path.startsWith(to));
-          
+
           const handleClick = (e: React.MouseEvent) => {
             if (to === "/account" && !user) {
               e.preventDefault();
@@ -125,9 +125,9 @@ export function BottomNav() {
           };
 
           return (
-            <Link 
-              key={i} 
-              to={to} 
+            <Link
+              key={i}
+              to={to}
               onClick={handleClick}
               className="flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium relative"
             >
@@ -148,33 +148,41 @@ export function BottomNav() {
 
 export function Footer() {
   const cols: { title: string; links: { label: string; to: string }[] }[] = [
-    { title: "Shop", links: [
-      { label: "Smartphones", to: "/shop" },
-      { label: "Tablets", to: "/shop" },
-      { label: "Smartwatches", to: "/shop" },
-      { label: "Earbuds", to: "/shop" },
-      { label: "Accessories", to: "/shop" },
-    ]},
-    { title: "Customer Support", links: [
-      { label: "Help Center", to: "/contact" },
-      { label: "Order Tracking", to: "/contact" },
-      { label: "Returns", to: "/refund-policy" },
-      { label: "Warranty", to: "/contact" },
-      { label: "Contact", to: "/contact" },
-    ]},
-    { title: "Company", links: [
-      { label: "About Us", to: "/" },
-      { label: "Stores", to: "/contact" },
-      { label: "Careers", to: "/" },
-      { label: "Blog", to: "/" },
-      { label: "Press", to: "/" },
-    ]},
-    { title: "Legal", links: [
-      { label: "Privacy", to: "/privacy" },
-      { label: "Terms", to: "/terms" },
-      { label: "Refund Policy", to: "/refund-policy" },
-      { label: "Shipping Policy", to: "/shipping-policy" },
-    ]},
+    {
+      title: "Shop", links: [
+        { label: "Smartphones", to: "/shop" },
+        { label: "Tablets", to: "/shop" },
+        { label: "Smartwatches", to: "/shop" },
+        { label: "Earbuds", to: "/shop" },
+        { label: "Accessories", to: "/shop" },
+      ]
+    },
+    {
+      title: "Customer Support", links: [
+        { label: "Help Center", to: "/contact" },
+        { label: "Order Tracking", to: "/contact" },
+        { label: "Returns", to: "/refund-policy" },
+        { label: "Warranty", to: "/contact" },
+        { label: "Contact", to: "/contact" },
+      ]
+    },
+    {
+      title: "Company", links: [
+        { label: "About Us", to: "/" },
+        { label: "Stores", to: "/contact" },
+        { label: "Careers", to: "/" },
+        { label: "Blog", to: "/" },
+        { label: "Press", to: "/" },
+      ]
+    },
+    {
+      title: "Legal", links: [
+        { label: "Privacy", to: "/privacy" },
+        { label: "Terms", to: "/terms" },
+        { label: "Refund Policy", to: "/refund-policy" },
+        { label: "Shipping Policy", to: "/shipping-policy" },
+      ]
+    },
   ];
   return (
     <footer className="mt-20 border-t border-border bg-muted/40">
