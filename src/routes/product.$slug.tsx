@@ -29,7 +29,6 @@ export const Route = createFileRoute("/product/$slug")({
 
     if (error || !product) throw notFound();
 
-    // Check for an active flash sale
     const activeFlashSale = (product.flash_sales as any)?.find((s: any) => 
       s.is_active && 
       new Date(s.start_at) <= new Date(now) && 
@@ -38,6 +37,30 @@ export const Route = createFileRoute("/product/$slug")({
 
     const basePrice = activeFlashSale ? activeFlashSale.sale_price : (product.discount_price || product.price);
     const oldPrice = activeFlashSale ? product.price : (product.discount_price ? product.price : undefined);
+
+    const { data: relatedData } = await (supabase as any)
+      .from("products")
+      .select(`
+        *,
+        brands(name),
+        categories!products_category_id_fkey(name),
+        product_images(url)
+      `)
+      .eq("category_id", product.category_id)
+      .neq("id", product.id)
+      .eq("status", "active")
+      .limit(5);
+
+    const relatedProducts = (relatedData || []).map((rp: any) => ({
+      ...rp,
+      brand: rp.brands?.name || "Unknown Brand",
+      category: rp.categories?.name || "General",
+      image: rp.product_images?.[0]?.url || "",
+      price: rp.discount_price || rp.price,
+      oldPrice: rp.discount_price ? rp.price : undefined,
+      rating: 4.7,
+      reviews: 0,
+    }));
 
     return { 
       product: {
@@ -51,7 +74,8 @@ export const Route = createFileRoute("/product/$slug")({
         reviews: 0,
         variants: product.product_variants || [],
         activeFlashSale,
-      } as any
+      } as any,
+      relatedProducts
     };
   },
   head: ({ loaderData }) => {
@@ -71,7 +95,7 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
-  const { product: p } = Route.useLoaderData() as { product: any };
+  const { product: p, relatedProducts } = Route.useLoaderData() as { product: any, relatedProducts: any[] };
   const add = useCart((s) => s.add);
   const qc = useQueryClient();
   const [qty, setQty] = useState(1);
@@ -237,7 +261,7 @@ function ProductPage() {
 
   const isAddDisabled = isOutOfStock || (hasVariants && !selectedVariantId);
 
-  const related = products.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
+  const related = relatedProducts || [];
 
   function handleAdd() {
     if (isOutOfStock) return;
