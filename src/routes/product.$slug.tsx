@@ -48,7 +48,7 @@ export const Route = createFileRoute("/product/$slug")({
         oldPrice,
         price: basePrice,
         rating: 4.7,
-        reviews: 24,
+        reviews: 0,
         variants: product.product_variants || [],
         activeFlashSale,
       } as any

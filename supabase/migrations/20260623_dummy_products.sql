@@ -1,4 +1,4 @@
--- Dummy data for Products covering each category and brand with approximate Sri Lanka prices (LKR)
+-- Dummy data for Products based on user provided dataset
 DO $$
 DECLARE
     -- Brands
@@ -11,198 +11,237 @@ DECLARE
     honor_id UUID := (SELECT id FROM public.brands WHERE slug = 'honor');
     vivo_id UUID := (SELECT id FROM public.brands WHERE slug = 'vivo');
     oppo_id UUID := (SELECT id FROM public.brands WHERE slug = 'oppo');
+    motorola_id UUID := (SELECT id FROM public.brands WHERE slug = 'motorola');
+    realme_id UUID := (SELECT id FROM public.brands WHERE slug = 'realme');
+    tecno_id UUID := (SELECT id FROM public.brands WHERE slug = 'tecno');
 
-    -- Parent Categories
+    -- Categories
     smartphones_id UUID := (SELECT id FROM public.categories WHERE slug = 'smartphones');
-    tablets_id UUID := (SELECT id FROM public.categories WHERE slug = 'tablets');
-    smartwatches_id UUID := (SELECT id FROM public.categories WHERE slug = 'smartwatches');
-    audio_id UUID := (SELECT id FROM public.categories WHERE slug = 'audio-earbuds');
-    acc_id UUID := (SELECT id FROM public.categories WHERE slug = 'accessories');
-    gaming_id UUID := (SELECT id FROM public.categories WHERE slug = 'gaming-gear');
-    pre_owned_id UUID := (SELECT id FROM public.categories WHERE slug = 'pre-owned');
-
+    
     -- Sub-categories
     ios_devices_id UUID := (SELECT id FROM public.categories WHERE slug = 'ios-devices');
     android_devices_id UUID := (SELECT id FROM public.categories WHERE slug = 'android-devices');
     budget_phones_id UUID := (SELECT id FROM public.categories WHERE slug = 'budget-phones');
-    ipads_id UUID := (SELECT id FROM public.categories WHERE slug = 'ipads');
-    android_tablets_id UUID := (SELECT id FROM public.categories WHERE slug = 'android-tablets');
-    tws_id UUID := (SELECT id FROM public.categories WHERE slug = 'tws-earbuds');
-    chargers_id UUID := (SELECT id FROM public.categories WHERE slug = 'chargers-cables');
 
     -- Product variables
     p_id UUID;
 BEGIN
-    -- Clear existing products to avoid duplicates during seeding
-    DELETE FROM public.products;
+    -- Clear existing related data to avoid foreign key constraints during seeding
+    -- Only delete from tables that we know exist and are strictly referencing products
+    DELETE FROM public.order_items;
     DELETE FROM public.product_images;
+    DELETE FROM public.products;
 
-    -----------------------------------------
-    -- 1. SMARTPHONES
-    -----------------------------------------
     -- Apple
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('iPhone 15 Pro Max (256GB)', 'iphone-15-pro-max-256', 'IP15PM-256', apple_id, smartphones_id, ios_devices_id, 440000.00, 20, 'active', true, 'The ultimate iPhone with Titanium frame and A17 Pro chip.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&w=800&q=80', 'iPhone 15 Pro Max');
+    ('iPhone 16 Pro Max', 'iphone-16-pro-max', 'AP000', apple_id, smartphones_id, ios_devices_id, 520000, 0, 'active', true, 'A18 Pro, Titanium, 48MP') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'iPhone 16 Pro Max');
 
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('iPhone 15 (128GB)', 'iphone-15-128', 'IP15-128', apple_id, smartphones_id, ios_devices_id, 285000.00, 35, 'active', false, 'Dynamic Island and 48MP main camera in a sleek design.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80', 'iPhone 15');
+    ('iPhone 16 Pro', 'iphone-16-pro', 'AP001', apple_id, smartphones_id, ios_devices_id, 460000, 0, 'active', true, 'A18 Pro, 6.3 inch Display') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'iPhone 16 Pro');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('iPhone 16', 'iphone-16', 'AP002', apple_id, smartphones_id, ios_devices_id, 320000, 0, 'active', true, 'A18, Dual Camera') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'iPhone 16');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('iPhone 16 Plus', 'iphone-16-plus', 'AP003', apple_id, smartphones_id, ios_devices_id, 360000, 0, 'active', true, 'A18, Large Display') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'iPhone 16 Plus');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('iPhone 15 Pro', 'iphone-15-pro', 'AP004', apple_id, smartphones_id, ios_devices_id, 390000, 0, 'active', true, 'A17 Pro, Titanium') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'iPhone 15 Pro');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('iPhone 15', 'iphone-15', 'AP005', apple_id, smartphones_id, ios_devices_id, 270000, 0, 'active', true, 'A16 Bionic') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'iPhone 15');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('iPhone 13', 'iphone-13', 'AP006', apple_id, smartphones_id, ios_devices_id, 210000, 0, 'active', true, 'Reliable performance') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'iPhone 13');
 
     -- Samsung
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Samsung Galaxy S24 Ultra (512GB)', 'samsung-galaxy-s24-ultra-512', 'SGS24U-512', samsung_id, smartphones_id, android_devices_id, 410000.00, 15, 'active', true, 'Galaxy AI, Titanium frame, and a built-in S-Pen.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1610945265064-785673784867?auto=format&fit=crop&w=800&q=80', 'Samsung Galaxy S24 Ultra');
+    ('Galaxy S25 Ultra', 'galaxy-s25-ultra', 'SA007', samsung_id, smartphones_id, android_devices_id, 495000, 0, 'active', true, 'Snapdragon 8 Gen 4, 200MP') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy S25 Ultra');
 
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Samsung Galaxy A54 5G', 'samsung-galaxy-a54', 'SGA54-256', samsung_id, smartphones_id, budget_phones_id, 115000.00, 50, 'active', false, 'Awesome screen, awesome camera, long-lasting battery.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1533228100845-08145b01de14?auto=format&fit=crop&w=800&q=80', 'Samsung Galaxy A54');
+    ('Galaxy S25+', 'galaxy-s25+', 'SA008', samsung_id, smartphones_id, android_devices_id, 380000, 0, 'active', true, 'Flagship performance') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy S25+');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Galaxy S24 Ultra', 'galaxy-s24-ultra', 'SA009', samsung_id, smartphones_id, android_devices_id, 410000, 0, 'active', true, 'Snapdragon 8 Gen 3') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy S24 Ultra');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Galaxy A56 5G', 'galaxy-a56-5g', 'SA010', samsung_id, smartphones_id, budget_phones_id, 135000, 0, 'active', false, '120Hz AMOLED') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy A56 5G');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Galaxy A55 5G', 'galaxy-a55-5g', 'SA011', samsung_id, smartphones_id, budget_phones_id, 115000, 0, 'active', false, 'Exynos 1480') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy A55 5G');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Galaxy A36 5G', 'galaxy-a36-5g', 'SA012', samsung_id, smartphones_id, budget_phones_id, 95000, 0, 'active', false, 'Great value 5G') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy A36 5G');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Galaxy A16 5G', 'galaxy-a16-5g', 'SA013', samsung_id, smartphones_id, budget_phones_id, 65000, 0, 'active', false, 'Reliable budget 5G') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy A16 5G');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Galaxy A06', 'galaxy-a06', 'SA014', samsung_id, smartphones_id, budget_phones_id, 45000, 0, 'active', false, 'Entry level') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Galaxy A06');
 
     -- Xiaomi
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Xiaomi 14 Ultra', 'xiaomi-14-ultra', 'MI14U-512', xiaomi_id, smartphones_id, android_devices_id, 350000.00, 10, 'active', true, 'Leica optics, Snapdragon 8 Gen 3.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935197726?auto=format&fit=crop&w=800&q=80', 'Xiaomi 14 Ultra');
+    ('Xiaomi 15 Pro', 'xiaomi-15-pro', 'XI015', xiaomi_id, smartphones_id, android_devices_id, 370000, 0, 'active', false, 'Leica optics, 8 Gen 4') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Xiaomi 15 Pro');
 
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Redmi Note 13 Pro+ 5G', 'redmi-note-13-pro-plus', 'RN13PP-256', xiaomi_id, smartphones_id, budget_phones_id, 125000.00, 60, 'active', false, '200MP OIS camera, 120Hz curved AMOLED.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=800&q=80', 'Redmi Note 13 Pro+');
+    ('Xiaomi 14', 'xiaomi-14', 'XI016', xiaomi_id, smartphones_id, android_devices_id, 310000, 0, 'active', false, 'Compact flagship') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Xiaomi 14');
 
-    -- OnePlus
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('OnePlus 12 (16GB/512GB)', 'oneplus-12', 'OP12-512', oneplus_id, smartphones_id, android_devices_id, 290000.00, 20, 'active', true, 'Smooth Beyond Belief. Hasselblad Camera for Mobile.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1678911820864-e2c567c655d7?auto=format&fit=crop&w=800&q=80', 'OnePlus 12');
+    ('Redmi Note 14 Pro+', 'redmi-note-14-pro+', 'XI017', xiaomi_id, smartphones_id, budget_phones_id, 110000, 0, 'active', false, 'High resolution screen') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Redmi Note 14 Pro+');
 
-    -- Nothing
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Nothing Phone (2) (256GB)', 'nothing-phone-2', 'NP2-256', nothing_id, smartphones_id, android_devices_id, 230000.00, 30, 'active', false, 'Come to the bright side. New Glyph Interface.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1690299863832-72bc61e5f8cc?auto=format&fit=crop&w=800&q=80', 'Nothing Phone 2');
+    ('Redmi Note 13 Pro', 'redmi-note-13-pro', 'XI018', xiaomi_id, smartphones_id, budget_phones_id, 95000, 0, 'active', false, '200MP camera') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Redmi Note 13 Pro');
 
-    -- Google
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Google Pixel 8 Pro (256GB)', 'google-pixel-8-pro', 'GP8P-256', google_id, smartphones_id, android_devices_id, 320000.00, 15, 'active', true, 'The all-pro Google phone, powered by Google Tensor G3.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1612442449764-a6c3f350c388?auto=format&fit=crop&w=800&q=80', 'Google Pixel 8 Pro');
+    ('Redmi Note 13', 'redmi-note-13', 'XI019', xiaomi_id, smartphones_id, budget_phones_id, 75000, 0, 'active', false, 'AMOLED, 120Hz') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Redmi Note 13');
 
-    -- Honor
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Honor Magic 6 Pro', 'honor-magic-6-pro', 'HM6P-512', honor_id, smartphones_id, android_devices_id, 310000.00, 12, 'active', false, 'Discover the Magic. Excellent camera system.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935197726?auto=format&fit=crop&w=800&q=80', 'Honor Magic 6 Pro');
+    ('Poco X7 Pro', 'poco-x7-pro', 'XI020', xiaomi_id, smartphones_id, budget_phones_id, 125000, 0, 'active', false, 'Performance beast') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Poco X7 Pro');
 
-    -- Vivo
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Vivo X100 Pro', 'vivo-x100-pro', 'VX100P-256', vivo_id, smartphones_id, android_devices_id, 315000.00, 10, 'active', false, 'Zeiss Co-engineered Imaging System.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80', 'Vivo X100 Pro');
+    ('Poco M6 Pro', 'poco-m6-pro', 'XI021', xiaomi_id, smartphones_id, budget_phones_id, 65000, 0, 'active', false, 'Value for money') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Poco M6 Pro');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Redmi 14C', 'redmi-14c', 'XI022', xiaomi_id, smartphones_id, budget_phones_id, 40000, 0, 'active', false, 'Basic smartphone') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Redmi 14C');
 
     -- Oppo
     INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Oppo Find X7 Ultra', 'oppo-find-x7-ultra', 'OFX7U-256', oppo_id, smartphones_id, android_devices_id, 340000.00, 8, 'active', true, 'Master every scene with Hasselblad Camera.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1546054454-aa26e2b734c7?auto=format&fit=crop&w=800&q=80', 'Oppo Find X7 Ultra');
+    ('Oppo Find X8 Pro', 'oppo-find-x8-pro', 'OP023', oppo_id, smartphones_id, android_devices_id, 390000, 0, 'active', false, 'Hasselblad Camera') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Oppo Find X8 Pro');
 
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Oppo Reno 13 Pro', 'oppo-reno-13-pro', 'OP024', oppo_id, smartphones_id, android_devices_id, 160000, 0, 'active', false, 'Portrait expert') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Oppo Reno 13 Pro');
 
-    -----------------------------------------
-    -- 2. TABLETS
-    -----------------------------------------
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured) VALUES
-    ('iPad Pro 11-inch (M4, 256GB)', 'ipad-pro-11-m4', 'IPADPM4-11-256', apple_id, tablets_id, ipads_id, 410000.00, 15, 'active', true)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=800&q=80', 'iPad Pro 11-inch');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Oppo Reno 12 F', 'oppo-reno-12-f', 'OP025', oppo_id, smartphones_id, android_devices_id, 125000, 0, 'active', false, 'Sleek design') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Oppo Reno 12 F');
 
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured) VALUES
-    ('Samsung Galaxy Tab S9 (128GB)', 'samsung-galaxy-tab-s9', 'SGTABS9-128', samsung_id, tablets_id, android_tablets_id, 280000.00, 18, 'active', false)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1589739900241-755fbe77c87b?auto=format&fit=crop&w=800&q=80', 'Samsung Galaxy Tab S9');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Oppo A78', 'oppo-a78', 'OP026', oppo_id, smartphones_id, budget_phones_id, 85000, 0, 'active', false, 'Fast charging') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Oppo A78');
 
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Oppo A60', 'oppo-a60', 'OP027', oppo_id, smartphones_id, budget_phones_id, 65000, 0, 'active', false, 'Durable') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Oppo A60');
 
-    -----------------------------------------
-    -- 3. SMARTWATCHES
-    -----------------------------------------
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, price, stock_quantity, status, featured) VALUES
-    ('Apple Watch Series 9 (45mm)', 'apple-watch-series-9-45mm', 'AWS9-45', apple_id, smartwatches_id, 155000.00, 25, 'active', true)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?auto=format&fit=crop&w=800&q=80', 'Apple Watch Series 9');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Oppo A58', 'oppo-a58', 'OP028', oppo_id, smartphones_id, budget_phones_id, 55000, 0, 'active', false, 'Entry level') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Oppo A58');
 
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, price, stock_quantity, status, featured) VALUES
-    ('Samsung Galaxy Watch 6 Classic', 'samsung-galaxy-watch-6-classic', 'SGW6C-47', samsung_id, smartwatches_id, 120000.00, 30, 'active', false)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=800&q=80', 'Samsung Galaxy Watch 6');
+    -- Vivo
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Vivo X200 Pro', 'vivo-x200-pro', 'VI029', vivo_id, smartphones_id, android_devices_id, 400000, 0, 'active', false, 'ZEISS optics') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Vivo X200 Pro');
 
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Vivo V40', 'vivo-v40', 'VI030', vivo_id, smartphones_id, android_devices_id, 145000, 0, 'active', false, 'Portrait focus') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Vivo V40');
 
-    -----------------------------------------
-    -- 4. AUDIO & EARBUDS
-    -----------------------------------------
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured) VALUES
-    ('AirPods Pro (2nd Gen) with USB-C', 'airpods-pro-2-usbc', 'APP2-USBC', apple_id, audio_id, tws_id, 82000.00, 45, 'active', true)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=800&q=80', 'AirPods Pro');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Vivo V30', 'vivo-v30', 'VI031', vivo_id, smartphones_id, android_devices_id, 120000, 0, 'active', false, 'Slim design') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Vivo V30');
 
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured) VALUES
-    ('Samsung Galaxy Buds 2 Pro', 'samsung-galaxy-buds-2-pro', 'SGB2P-B', samsung_id, audio_id, tws_id, 60000.00, 40, 'active', false)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1590658268037-6bf127f0d692?auto=format&fit=crop&w=800&q=80', 'Galaxy Buds 2 Pro');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Vivo Y38 5G', 'vivo-y38-5g', 'VI032', vivo_id, smartphones_id, budget_phones_id, 80000, 0, 'active', false, 'Large battery') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Vivo Y38 5G');
 
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Vivo Y28', 'vivo-y28', 'VI033', vivo_id, smartphones_id, budget_phones_id, 60000, 0, 'active', false, '5G budget') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Vivo Y28');
 
-    -----------------------------------------
-    -- 5. ACCESSORIES
-    -----------------------------------------
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured) VALUES
-    ('Apple 20W USB-C Power Adapter', 'apple-20w-adapter', 'A20W-ADAPT', apple_id, acc_id, chargers_id, 8500.00, 100, 'active', false)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1583863779285-3737676ed25b?auto=format&fit=crop&w=800&q=80', 'Apple 20W Adapter');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Vivo Y18', 'vivo-y18', 'VI034', vivo_id, smartphones_id, budget_phones_id, 40000, 0, 'active', false, 'Budget choice') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Vivo Y18');
 
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured) VALUES
-    ('Samsung 25W Power Adapter', 'samsung-25w-adapter', 'S25W-ADAPT', samsung_id, acc_id, chargers_id, 6500.00, 150, 'active', false)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1612815154858-60aa4f740731?auto=format&fit=crop&w=800&q=80', 'Samsung 25W Adapter');
+    -- Google
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Google Pixel 9 Pro XL', 'google-pixel-9-pro-xl', 'GO035', google_id, smartphones_id, android_devices_id, 380000, 0, 'active', false, 'AI focus') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Google Pixel 9 Pro XL');
 
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Google Pixel 9', 'google-pixel-9', 'GO036', google_id, smartphones_id, android_devices_id, 310000, 0, 'active', false, 'Tensor G4') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Google Pixel 9');
 
-    -----------------------------------------
-    -- 6. GAMING GEAR
-    -----------------------------------------
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, price, stock_quantity, status, featured) VALUES
-    ('Xiaomi Black Shark FunCooler 3 Pro', 'black-shark-funcooler-3', 'BSFC3P', xiaomi_id, gaming_id, 14500.00, 30, 'active', false)
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80', 'Gaming Cooler');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Google Pixel 8a', 'google-pixel-8a', 'GO037', google_id, smartphones_id, android_devices_id, 220000, 0, 'active', false, 'Best budget Android') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Google Pixel 8a');
 
+    -- Oneplus
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('OnePlus 13', 'oneplus-13', 'ON038', oneplus_id, smartphones_id, android_devices_id, 340000, 0, 'active', false, 'Fastest performance') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'OnePlus 13');
 
-    -----------------------------------------
-    -- 7. PRE-OWNED
-    -----------------------------------------
-    INSERT INTO public.products (name, slug, sku, brand_id, category_id, price, stock_quantity, status, featured, short_description) VALUES
-    ('Pre-Owned iPhone 13 (128GB) - Excellent', 'pre-owned-iphone-13-128', 'PO-IP13-128', apple_id, pre_owned_id, 160000.00, 10, 'active', false, 'Fully tested and refurbished. Includes 3-month warranty.')
-    RETURNING id INTO p_id;
-    INSERT INTO public.product_images (product_id, url, alt) VALUES 
-    (p_id, 'https://images.unsplash.com/photo-1510557880182-3672f97ec671?auto=format&fit=crop&w=800&q=80', 'Pre-Owned iPhone 13');
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('OnePlus 12', 'oneplus-12', 'ON039', oneplus_id, smartphones_id, android_devices_id, 290000, 0, 'active', false, 'Flagship killer') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'OnePlus 12');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('OnePlus Nord 4', 'oneplus-nord-4', 'ON040', oneplus_id, smartphones_id, android_devices_id, 155000, 0, 'active', false, 'Balanced') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'OnePlus Nord 4');
+
+    -- Nothing
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Nothing Phone (3)', 'nothing-phone-3', 'NO041', nothing_id, smartphones_id, android_devices_id, 230000, 0, 'active', false, 'Unique design') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Nothing Phone (3)');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Nothing Phone (2a)', 'nothing-phone-2a', 'NO042', nothing_id, smartphones_id, android_devices_id, 160000, 0, 'active', false, 'Clean UI') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Nothing Phone (2a)');
+
+    -- Motorola
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Motorola Edge 50 Pro', 'motorola-edge-50-pro', 'MO043', motorola_id, smartphones_id, android_devices_id, 150000, 0, 'active', false, 'Curved display') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Motorola Edge 50 Pro');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Motorola G85', 'motorola-g85', 'MO044', motorola_id, smartphones_id, budget_phones_id, 85000, 0, 'active', false, 'Stock Android') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Motorola G85');
+
+    -- Honor
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Honor Magic 7 Pro', 'honor-magic-7-pro', 'HO045', honor_id, smartphones_id, android_devices_id, 360000, 0, 'active', false, 'Pro cameras') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Honor Magic 7 Pro');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Honor 200', 'honor-200', 'HO046', honor_id, smartphones_id, android_devices_id, 170000, 0, 'active', false, 'Portraits') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Honor 200');
+
+    -- Realme
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Realme 13 Pro+', 'realme-13-pro+', 'RE047', realme_id, smartphones_id, budget_phones_id, 140000, 0, 'active', false, 'High performance') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Realme 13 Pro+');
+
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Realme C67', 'realme-c67', 'RE048', realme_id, smartphones_id, budget_phones_id, 55000, 0, 'active', false, 'Budget') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Realme C67');
+
+    -- Tecno
+    INSERT INTO public.products (name, slug, sku, brand_id, category_id, sub_category_id, price, stock_quantity, status, featured, short_description) VALUES
+    ('Tecno Spark 30 Pro', 'tecno-spark-30-pro', 'TE049', tecno_id, smartphones_id, budget_phones_id, 65000, 0, 'active', false, 'Affordable') RETURNING id INTO p_id;
+    INSERT INTO public.product_images (product_id, url, alt) VALUES (p_id, 'https://images.unsplash.com/photo-1598327105666-5b8935133d11?auto=format&fit=crop&w=800&h=800&q=80', 'Tecno Spark 30 Pro');
 
 END $$;
