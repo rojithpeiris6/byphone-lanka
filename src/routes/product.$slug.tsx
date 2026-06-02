@@ -82,7 +82,7 @@ export const Route = createFileRoute("/product/$slug")({
     const p = loaderData?.product;
     return {
       meta: [
-        { title: p ? `${p.name} — byphone.lk` : "Product — byphone.lk" },
+        { title: p ? `${p.name} | buyphone.lk` : "Product | buyphone.lk" },
         { name: "description", content: p ? `Buy ${p.name} in Sri Lanka at ${formatLKR(p.price)}. 100% genuine with official warranty.` : "Product details" },
         { property: "og:title", content: p?.name ?? "Product" },
         { property: "og:type", content: "product" },
@@ -270,7 +270,7 @@ function ProductPage() {
       return;
     }
     add(p.id, selectedVariantId, qty);
-    toast.success("Added to cart", { description: `${qty} × ${p.name}` });
+    toast.success("Added to cart", { description: `${qty} Ã— ${p.name}` });
   }
 
   const variantLabel = (v: any) => {
@@ -484,7 +484,7 @@ function ProductPage() {
         <div className="py-6">
           {tab === "desc" && (
             <div className="max-w-3xl text-sm leading-relaxed text-muted-foreground space-y-3">
-              <p>{p.description ?? `${p.name} — premium build, flagship performance, and an incredible camera system.`}</p>
+              <p>{p.description ?? `${p.name} | premium build, flagship performance, and an incredible camera system.`}</p>
               {p.highlights && (
                 <ul className="list-disc pl-5 space-y-1.5 text-foreground">
                   {p.highlights.map((h: any) => <li key={h}>{h}</li>)}

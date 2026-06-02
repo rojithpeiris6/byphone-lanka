@@ -60,16 +60,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "byphone.lk — Latest Smartphones at the Best Prices in Sri Lanka" },
-      { name: "description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
+      { title: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
+      { name: "description", content: "Buy 100% genuine smartphones, tablets, smartwatches, and tech accessories at buyphone.lk. Enjoy islandwide free delivery, official warranty, and easy returns in Sri Lanka." },
+      { name: "keywords", content: "buy phones sri lanka, smartphones sri lanka, mobile phones online, apple iphone sri lanka, samsung galaxy sri lanka, tech accessories colombo, buyphone.lk" },
+      { name: "author", content: "buyphone.lk" },
+      { name: "robots", content: "index, follow" },
       { name: "theme-color", content: "#2563EB" },
-      { property: "og:title", content: "byphone.lk — Latest Smartphones at the Best Prices in Sri Lanka" },
-      { name: "twitter:title", content: "byphone.lk — Latest Smartphones at the Best Prices in Sri Lanka" },
-      { property: "og:description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
-      { name: "twitter:description", content: "Buy the latest smartphones, tablets, smartwatches, earbuds & accessories in Sri Lanka." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:site_name", content: "buyphone.lk" },
+      { property: "og:locale", content: "en_LK" },
       { property: "og:type", content: "website" },
+      { property: "og:title", content: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
+      { property: "og:description", content: "Buy 100% genuine smartphones, tablets, smartwatches, and tech accessories at buyphone.lk. Enjoy islandwide free delivery and official warranty." },
+      { property: "og:url", content: "https://buyphone.lk" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
+      { property: "og:image:alt", content: "buyphone.lk Online Store" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
+      { name: "twitter:description", content: "Buy 100% genuine smartphones, tablets, and tech accessories with islandwide free delivery in Sri Lanka." },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -97,7 +105,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isAdmin = path.startsWith("/admin");
-  
+
   const authModalOpen = useAuthModalStore((s) => s.isOpen);
   const authModalClose = useAuthModalStore((s) => s.close);
 

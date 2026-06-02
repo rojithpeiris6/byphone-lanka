@@ -10,11 +10,14 @@ import { FlashSaleTimer } from "@/components/FlashSaleTimer";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "byphone.lk — Latest Smartphones at the Best Prices in Sri Lanka" },
+      { title: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
       { name: "description", content: "Shop iPhone, Samsung, OnePlus, Xiaomi & more. 100% genuine with official warranty, free islandwide delivery and easy returns." },
-      { property: "og:title", content: "byphone.lk — Smartphones & Tech, Sri Lanka" },
+      { property: "og:title", content: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
       { property: "og:description", content: "100% genuine smartphones with official warranty and free islandwide delivery." },
-      { property: "og:image", content: "/og-hero.jpg" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
+      { name: "twitter:title", content: "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka" },
+      { name: "twitter:description", content: "100% genuine smartphones with official warranty and free islandwide delivery." },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c0378aa7-8161-48b0-bdf0-02bd64dc9528/id-preview-337c86a0--c593d638-2684-4a0d-b57b-762e0c4eaf6c.lovable.app-1780113721935.png" },
     ],
     links: [{ rel: "canonical", href: "/" }],
   }),
@@ -124,7 +127,7 @@ function Home() {
         .from("products")
         .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
         .eq("status", "active");
-      
+
       if (idsToExclude.length > 0) {
         query = query.not("id", "in", `(${idsToExclude.join(',')})`);
       }
@@ -162,7 +165,7 @@ function Home() {
         .lte("start_at", now)
         .gte("end_at", now)
         .limit(8);
-      
+
       if (error) throw error;
 
       return (data ?? []).map((s: any) => {
@@ -331,7 +334,7 @@ function Home() {
           <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-background text-foreground rounded-full px-5 py-2.5 text-sm font-bold">
             LEARN MORE <ChevronRight className="size-4" />
           </Link>
-          <div className="absolute -right-6 -bottom-6 opacity-30 text-[180px] leading-none">📱</div>
+          <div className="absolute -right-6 -bottom-6 opacity-30 text-[180px] leading-none">ðŸ“±</div>
         </div>
         <div className="relative overflow-hidden rounded-3xl bg-primary-soft p-7 sm:p-9">
           <p className="text-[11px] font-bold tracking-widest text-primary">SPECIAL OFFERS</p>
@@ -339,7 +342,7 @@ function Home() {
           <Link to="/shop" className="mt-5 inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-5 py-2.5 text-sm font-bold">
             SHOP DEALS <ChevronRight className="size-4" />
           </Link>
-          <div className="absolute -right-2 -bottom-4 text-[140px] leading-none">🏷️</div>
+          <div className="absolute -right-2 -bottom-4 text-[140px] leading-none">ðŸ·ï¸</div>
         </div>
       </section>
 
@@ -349,16 +352,17 @@ function Home() {
           <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-center">SHOP BY BRAND</h2>
           <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-4">
           {dbBrands?.map((b) => (
-            <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group aspect-square rounded-2xl border border-border bg-card grid place-items-center p-4 transition-all hover:border-primary hover:shadow-sm">
-              <div className="size-12 rounded-full bg-muted overflow-hidden grid place-items-center p-2 group-hover:scale-110 transition-transform">
+            <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group flex flex-col items-center gap-2">
+              <div className="w-full aspect-square rounded-full border border-border bg-card grid place-items-center overflow-hidden transition-all group-hover:border-primary group-hover:shadow-sm">
                 {b.logo ? (
-                  <img src={b.logo} alt={b.name} className="size-full object-contain" />
+                  <img src={b.logo} alt={b.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                 ) : (
-                  <span className="text-[10px] font-bold text-muted-foreground">{b.name}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground text-center leading-none">{b.name}</span>
                 )}
               </div>
+              <span className="text-xs font-semibold text-center">{b.name}</span>
             </Link>
           ))}
         </div>
@@ -374,11 +378,11 @@ function Home() {
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Get the latest tech updates</h2>
             <p className="text-slate-400 text-sm sm:text-base">Subscribe to our newsletter for exclusive deals, new arrivals, and tech tips delivered straight to your inbox.</p>
             <form className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
+              <input
+                type="email"
+                placeholder="Enter your email"
                 required
-                className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all" 
+                className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               />
               <button className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
                 Subscribe
@@ -425,14 +429,14 @@ function Home() {
           {[
             { n: "Kasun P.", t: "Genuine product, lightning fast delivery to Kandy. Will definitely buy again!", r: 5 },
             { n: "Sahani M.", t: "Best price for the iPhone 15 Pro on the island. Packaging was premium.", r: 5 },
-            { n: "Dinesh F.", t: "Great support team — helped me pick the right phone for my dad. 10/10.", r: 5 },
+            { n: "Dinesh F.", t: "Great support team | helped me pick the right phone for my dad. 10/10.", r: 5 },
           ].map((r) => (
             <div key={r.n} className="rounded-2xl border border-border bg-card p-5">
               <div className="flex gap-0.5 text-amber-400">
                 {Array.from({ length: r.r }).map((_, i) => <Star key={i} className="size-4 fill-amber-400" />)}
               </div>
               <p className="mt-3 text-sm leading-relaxed">"{r.t}"</p>
-              <p className="mt-3 text-xs font-semibold text-muted-foreground">— {r.n}</p>
+              <p className="mt-3 text-xs font-semibold text-muted-foreground">| {r.n}</p>
             </div>
           ))}
         </div>

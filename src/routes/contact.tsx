@@ -7,8 +7,8 @@ import { sendContactMessage } from "@/lib/api/contact.functions";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact Us — byphone.lk" },
-      { name: "description", content: "Get in touch with byphone.lk. We're here to help you with any questions about our products or orders." },
+      { title: "Contact Us | buyphone.lk" },
+      { name: "description", content: "Get in touch with buyphone.lk. We're here to help you with any questions about our products or orders." },
     ],
   }),
   component: ContactPage,
@@ -60,7 +60,7 @@ function ContactPage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Email Us</p>
-                  <p className="text-lg font-semibold">support@byphone.lk</p>
+                  <p className="text-lg font-semibold">support@buyphone.lk</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">

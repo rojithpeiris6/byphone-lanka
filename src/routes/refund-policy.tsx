@@ -4,8 +4,8 @@ import { ChevronLeft, RotateCcw } from "lucide-react";
 export const Route = createFileRoute("/refund-policy")({
   head: () => ({
     meta: [
-      { title: "Refund Policy — byphone.lk" },
-      { name: "description", content: "Information about returns, refunds, and exchanges at byphone.lk." },
+      { title: "Refund Policy | buyphone.lk" },
+      { name: "description", content: "Information about returns, refunds, and exchanges at buyphone.lk." },
     ],
   }),
   component: RefundPage,

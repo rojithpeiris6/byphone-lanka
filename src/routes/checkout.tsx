@@ -19,7 +19,7 @@ const SRI_LANKA_DISTRICTS = [
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
-      { title: "Checkout — byphone.lk" },
+      { title: "Checkout | buyphone.lk" },
       { name: "description", content: "Secure checkout. Pay with Card (PayPal/PayHere) or Cash on Delivery." },
       { name: "robots", content: "noindex" },
     ],
@@ -316,7 +316,7 @@ function Checkout() {
             </div>
 
             <div className="mt-8 flex items-center justify-between">
-              <Link to="/cart" className="text-sm font-semibold text-primary inline-flex items-center gap-1">← Back to Cart</Link>
+              <Link to="/cart" className="text-sm font-semibold text-primary inline-flex items-center gap-1">â† Back to Cart</Link>
               <button 
                 onClick={handlePlaceOrder} 
                 disabled={isSubmitting || loadingProducts}
@@ -410,12 +410,12 @@ function Checkout() {
             </div>
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">
-            <h4 className="font-extrabold text-sm mb-3">Why shop with byphone.lk?</h4>
+            <h4 className="font-extrabold text-sm mb-3">Why shop with buyphone.lk?</h4>
             <ul className="space-y-3 text-xs">
               <Why Icon={ShieldCheck} title="100% Original Products" sub="All products are genuine and brand new." />
               <Why Icon={Truck} title="Fast & Free Delivery" sub="Islandwide delivery on all orders." />
               <Why Icon={RotateCcw} title="Easy Returns" sub="Hassle-free returns within 7 days." />
-              <Why Icon={Headphones} title="24/7 Support" sub="011 2 123 456 · support@byphone.lk" />
+              <Why Icon={Headphones} title="24/7 Support" sub="011 2 123 456 · support@buyphone.lk" />
             </ul>
           </div>
         </aside>

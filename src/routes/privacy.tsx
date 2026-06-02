@@ -4,8 +4,8 @@ import { ChevronLeft, Shield } from "lucide-react";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — byphone.lk" },
-      { name: "description", content: "Learn how byphone.lk collects, uses, and protects your personal information." },
+      { title: "Privacy Policy | buyphone.lk" },
+      { name: "description", content: "Learn how buyphone.lk collects, uses, and protects your personal information." },
     ],
   }),
   component: PrivacyPage,
@@ -33,7 +33,7 @@ function PrivacyPage() {
         <section className="space-y-4">
           <h3 className="text-lg font-bold text-foreground">1. Information We Collect</h3>
           <p>We collect information you provide directly to us when you create an account, place an order, or contact our support team. This may include your name, email address, phone number, shipping address, and payment details.</p>
-          <p>We also automatically collect certain information when you visit byphone.lk, such as your IP address, browser type, and how you interact with our website through cookies and similar technologies.</p>
+          <p>We also automatically collect certain information when you visit buyphone.lk, such as your IP address, browser type, and how you interact with our website through cookies and similar technologies.</p>
         </section>
 
         <section className="space-y-4">
@@ -59,7 +59,7 @@ function PrivacyPage() {
 
         <section className="space-y-4">
           <h3 className="text-lg font-bold text-foreground">4. Your Rights</h3>
-          <p>Depending on your location, you may have the right to access, correct, or delete the personal information we hold about you. To exercise these rights, please contact us at support@byphone.lk.</p>
+          <p>Depending on your location, you may have the right to access, correct, or delete the personal information we hold about you. To exercise these rights, please contact us at support@buyphone.lk.</p>
         </section>
 
         <section className="space-y-4">

@@ -50,7 +50,7 @@ export function Header() {
       <AnnounceBar />
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-6">
         <Link to="/" className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary shrink-0">
-          byphone<span className="text-foreground">.lk</span>
+          buyphone<span className="text-foreground">.lk</span>
         </Link>
         
         <nav className="hidden lg:flex items-center gap-7 text-sm font-medium">
@@ -180,7 +180,7 @@ export function Footer() {
     <footer className="mt-20 border-t border-border bg-muted/40">
       <div className="mx-auto max-w-7xl px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
         <div>
-          <div className="text-xl font-extrabold text-primary">byphone<span className="text-foreground">.lk</span></div>
+          <div className="text-xl font-extrabold text-primary">buyphone<span className="text-foreground">.lk</span></div>
           <p className="mt-3 text-sm text-muted-foreground max-w-xs">Sri Lanka's premium destination for smartphones, tablets and tech accessories.</p>
         </div>
         {cols.map((c) => (
@@ -194,7 +194,7 @@ export function Footer() {
       </div>
       <div className="border-t border-border">
         <div className="mx-auto max-w-7xl px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} byphone.lk · All rights reserved.</p>
+          <p>© {new Date().getFullYear()} buyphone.lk · All rights reserved.</p>
           <p>Visa · Mastercard · Amex · KOKO · MintPay · COD</p>
         </div>
       </div>

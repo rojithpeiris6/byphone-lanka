@@ -4,8 +4,8 @@ import { ChevronLeft, FileText } from "lucide-react";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms of Service — byphone.lk" },
-      { name: "description", content: "Read the terms and conditions for using the byphone.lk store." },
+      { title: "Terms of Service | buyphone.lk" },
+      { name: "description", content: "Read the terms and conditions for using the buyphone.lk store." },
     ],
   }),
   component: TermsPage,
@@ -32,7 +32,7 @@ function TermsPage() {
 
         <section className="space-y-4">
           <h3 className="text-lg font-bold text-foreground">1. Acceptance of Terms</h3>
-          <p>By accessing and using byphone.lk, you agree to be bound by these Terms of Service and all applicable laws and regulations in Sri Lanka.</p>
+          <p>By accessing and using buyphone.lk, you agree to be bound by these Terms of Service and all applicable laws and regulations in Sri Lanka.</p>
         </section>
 
         <section className="space-y-4">
@@ -53,7 +53,7 @@ function TermsPage() {
 
         <section className="space-y-4">
           <h3 className="text-lg font-bold text-foreground">5. Limitation of Liability</h3>
-          <p>byphone.lk shall not be liable for any indirect, incidental, or consequential damages resulting from the use or inability to use our products or services.</p>
+          <p>buyphone.lk shall not be liable for any indirect, incidental, or consequential damages resulting from the use or inability to use our products or services.</p>
         </section>
 
         <section className="space-y-4">

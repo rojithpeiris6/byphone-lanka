@@ -21,9 +21,9 @@ export const Route = createFileRoute("/shop")({
   }),
   head: () => ({
     meta: [
-      { title: "Shop Smartphones & Accessories — byphone.lk" },
+      { title: "Shop Smartphones & Accessories | buyphone.lk" },
       { name: "description", content: "Browse all smartphones, tablets, smartwatches, earbuds and accessories. Filter by brand, price and more." },
-      { property: "og:title", content: "Shop — byphone.lk" },
+      { property: "og:title", content: "Shop | buyphone.lk" },
       { property: "og:description", content: "Browse smartphones and accessories from top brands in Sri Lanka." },
     ],
     links: [{ rel: "canonical", href: "/shop" }],

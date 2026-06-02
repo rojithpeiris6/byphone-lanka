@@ -6,7 +6,7 @@ import { Tags, ChevronLeft } from "lucide-react";
 export const Route = createFileRoute("/brands")({
   head: () => ({
     meta: [
-      { title: "Our Brands — byphone.lk" },
+      { title: "Our Brands | buyphone.lk" },
       { name: "description", content: "Explore all the premium brands we carry, from Apple and Samsung to Xiaomi and OnePlus." },
     ],
   }),
@@ -57,16 +57,16 @@ function BrandsPage() {
               key={brand.id} 
               to="/shop" 
               search={{ brand: brand.name }}
-              className="group relative aspect-square rounded-2xl border border-border bg-card p-6 flex flex-col items-center justify-center text-center transition-all hover:shadow-lg hover:border-primary hover:-translate-y-1"
+              className="group flex flex-col items-center gap-3"
             >
-              <div className="size-20 rounded-full bg-muted overflow-hidden mb-4 grid place-items-center p-2">
+              <div className="w-full aspect-square rounded-full border border-border bg-card grid place-items-center overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 group-hover:border-primary">
                 {brand.logo ? (
-                  <img src={brand.logo} alt={brand.name} className="size-full object-contain" />
+                  <img src={brand.logo} alt={brand.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                 ) : (
                   <Tags className="size-8 text-muted-foreground" />
                 )}
               </div>
-              <span className="font-bold text-sm group-hover:text-primary transition-colors">{brand.name}</span>
+              <span className="font-bold text-sm group-hover:text-primary transition-colors text-center">{brand.name}</span>
             </Link>
           ))}
         </div>

@@ -4,7 +4,7 @@ import { ChevronLeft, Truck } from "lucide-react";
 export const Route = createFileRoute("/shipping-policy")({
   head: () => ({
     meta: [
-      { title: "Shipping Policy — byphone.lk" },
+      { title: "Shipping Policy | buyphone.lk" },
       { name: "description", content: "Details about our islandwide delivery options and timelines." },
     ],
   }),
@@ -61,7 +61,7 @@ function ShippingPage() {
 
         <section className="space-y-4">
           <h3 className="text-lg font-bold text-foreground">5. Delivery Issues</h3>
-          <p>If your order is delayed or arrives damaged, please contact us immediately at support@byphone.lk with your order number and photos of the damaged item.</p>
+          <p>If your order is delayed or arrives damaged, please contact us immediately at support@buyphone.lk with your order number and photos of the damaged item.</p>
         </section>
       </div>
     </div>

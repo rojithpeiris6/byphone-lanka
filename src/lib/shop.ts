@@ -129,7 +129,7 @@ export const products: Product[] = [
   {
     id: "case-iphone-15",
     slug: "silicone-case-iphone-15",
-    brand: "byphone", name: "Silicone Case for iPhone 15",
+    brand: "buyphone", name: "Silicone Case for iPhone 15",
     price: 4990, rating: 4.4, reviews: 220,
     image: cases, category: "Cases",
     stock_quantity: 50,
@@ -211,7 +211,7 @@ export const useCart = create<CartState>()(
         }, 0),
     }),
     {
-      name: "byphone-cart-storage",
+      name: "buyphone-cart-storage",
       storage: createJSONStorage(() => localStorage),
     }
   )

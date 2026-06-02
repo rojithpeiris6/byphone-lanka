@@ -59,7 +59,7 @@ function AdminLogin() {
         </div>
         <div>
           <h1 className="text-4xl font-extrabold text-white leading-tight">
-            byphone.lk<br />Admin Panel
+            buyphone.lk<br />Admin Panel
           </h1>
           <p className="mt-4 text-blue-100 text-lg max-w-md">
             Manage your store, products, orders, and customers from one powerful dashboard.
@@ -67,7 +67,7 @@ function AdminLogin() {
         </div>
         <div className="flex items-center gap-3 text-blue-200 text-sm">
           <Lock className="size-4" />
-          <span>Secure admin access • 256-bit encryption</span>
+          <span>Secure admin access â€¢ 256-bit encryption</span>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ function AdminLogin() {
             <div className="size-14 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto">
               <Store className="size-7 text-blue-600" />
             </div>
-            <h1 className="mt-4 text-2xl font-extrabold text-white">byphone.lk</h1>
+            <h1 className="mt-4 text-2xl font-extrabold text-white">buyphone.lk</h1>
             <p className="text-slate-400 text-sm mt-1">Admin Panel</p>
           </div>
 
@@ -104,7 +104,7 @@ function AdminLogin() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@byphone.lk"
+                    placeholder="admin@buyphone.lk"
                     required
                     autoComplete="email"
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"

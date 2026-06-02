@@ -6,7 +6,7 @@ import { FolderTree, ChevronLeft } from "lucide-react";
 export const Route = createFileRoute("/categories")({
   head: () => ({
     meta: [
-      { title: "Categories — byphone.lk" },
+      { title: "Categories | buyphone.lk" },
       { name: "description", content: "Browse all product categories including smartphones, tablets, and accessories." },
     ],
   }),

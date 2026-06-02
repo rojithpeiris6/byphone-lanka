@@ -27,8 +27,8 @@ const NAV: { to: string; label: string; Icon: any }[] = [
 
 const NOTIFICATIONS = [
   { id: 1, type: "order", title: "New order #BP-10238", desc: "Rs. 245,000 · iPhone 15 Pro Max", time: "2m ago", dot: "bg-emerald-500" },
-  { id: 2, type: "stock", title: "Low stock alert", desc: "Galaxy S24 Ultra — only 3 left", time: "12m ago", dot: "bg-amber-500" },
-  { id: 3, type: "review", title: "New 5★ review", desc: "Pixel 8 Pro received a glowing review", time: "1h ago", dot: "bg-sky-500" },
+  { id: 2, type: "stock", title: "Low stock alert", desc: "Galaxy S24 Ultra | only 3 left", time: "12m ago", dot: "bg-amber-500" },
+  { id: 3, type: "review", title: "New 5â˜… review", desc: "Pixel 8 Pro received a glowing review", time: "1h ago", dot: "bg-sky-500" },
   { id: 4, type: "payment", title: "Payout processed", desc: "Rs. 1,820,000 sent to bank", time: "3h ago", dot: "bg-violet-500" },
   { id: 5, type: "order", title: "Order cancelled #BP-10220", desc: "Customer requested refund", time: "Yesterday", dot: "bg-rose-500" },
 ];
@@ -72,7 +72,7 @@ export function AdminLayout() {
       >
         <div className="h-16 px-5 flex items-center justify-between border-b border-border shrink-0">
           <Link to="/admin" className="text-lg font-extrabold tracking-tight text-primary">
-            byphone<span className="text-foreground">.admin</span>
+            buyphone<span className="text-foreground">.admin</span>
           </Link>
           <button className="lg:hidden p-1 rounded hover:bg-accent" onClick={() => setSidebarOpen(false)}><X className="size-5" /></button>
         </div>
@@ -98,7 +98,7 @@ export function AdminLayout() {
           })}
         </nav>
         <div className="p-3 border-t border-border text-xs text-muted-foreground">
-          v1.0 · byphone.lk
+          v1.0 · buyphone.lk
         </div>
       </aside>
 
@@ -117,7 +117,7 @@ export function AdminLayout() {
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
-                placeholder="Search orders, products, customers…"
+                placeholder="Search orders, products, customersâ€¦"
                 className="w-full pl-9 pr-3 h-9 rounded-lg bg-muted/60 border border-transparent focus:bg-background focus:border-border outline-none text-sm"
               />
             </div>

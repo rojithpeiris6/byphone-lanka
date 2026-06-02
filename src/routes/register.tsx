@@ -43,7 +43,7 @@ function RegisterPage() {
       <div className="w-full max-w-md bg-card border border-border rounded-3xl p-8 shadow-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-extrabold tracking-tight">Create Account</h1>
-          <p className="text-sm text-muted-foreground mt-2">Join byphone.lk for a better shopping experience</p>
+          <p className="text-sm text-muted-foreground mt-2">Join buyphone.lk for a better shopping experience</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,7 +99,7 @@ function RegisterPage() {
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>

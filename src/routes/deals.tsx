@@ -9,8 +9,8 @@ import { CouponCard } from "@/components/CouponCard";
 export const Route = createFileRoute("/deals")({
   head: () => ({
     meta: [
-      { title: "Hot Deals & Coupons — byphone.lk" },
-      { name: "description", content: "Grab the best deals and active discount coupons on latest smartphones and accessories at byphone.lk." },
+      { title: "Hot Deals & Coupons | buyphone.lk" },
+      { name: "description", content: "Grab the best deals and active discount coupons on latest smartphones and accessories at buyphone.lk." },
     ],
   }),
   component: DealsPage,

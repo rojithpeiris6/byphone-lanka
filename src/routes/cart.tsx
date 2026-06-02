@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Your Cart — byphone.lk" },
+      { title: "Your Cart | buyphone.lk" },
       { name: "description", content: "Review your cart and proceed to a secure checkout." },
       { name: "robots", content: "noindex" },
     ],
