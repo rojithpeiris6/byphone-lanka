@@ -79,7 +79,8 @@ export function ProductForm({ productId, onClose, onSuccess }: ProductFormProps)
         setLoading(false);
       }
     })();
-  }, [productId, isEdit, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId, isEdit]);
 
   function update<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ 
@@ -161,19 +162,13 @@ export function ProductForm({ productId, onClose, onSuccess }: ProductFormProps)
   const labelCls = "text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="bg-card border border-border rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sticky top-0 z-10 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+    <div className="max-w-[1200px] mx-auto w-full">
+      <div className="bg-card border border-border rounded-2xl w-full shadow-sm flex flex-col mb-8">
+        <div className="bg-card border-b border-border px-6 py-5 flex items-center justify-between rounded-t-2xl">
           <div>
             <h2 className="text-xl font-bold">{isEdit ? "Edit Product" : "New Product"}</h2>
-            <p className="text-xs text-muted-foreground">Fill in the details below to {isEdit ? "update" : "create"} the product.</p>
+            <p className="text-xs text-muted-foreground mt-1">Fill in the details below to {isEdit ? "update" : "create"} the product.</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-accent transition-colors">
-            <X className="size-5" />
-          </button>
         </div>
 
         <div className="p-6 space-y-8">
@@ -316,7 +311,7 @@ export function ProductForm({ productId, onClose, onSuccess }: ProductFormProps)
           )}
         </div>
 
-        <div className="sticky bottom-0 z-10 bg-card border-t border-border px-6 py-4 flex justify-end gap-3">
+        <div className="bg-card border-t border-border px-6 py-5 flex justify-end gap-3 rounded-b-2xl">
           <button 
             onClick={onClose} 
             className="h-11 px-6 rounded-xl border border-border font-bold text-sm hover:bg-accent transition-colors"

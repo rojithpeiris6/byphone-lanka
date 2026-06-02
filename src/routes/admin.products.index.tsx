@@ -1,12 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Trash2, Package, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
-import { ProductForm } from "@/components/admin/ProductForm";
 
-export const Route = createFileRoute("/admin/products")({
+export const Route = createFileRoute("/admin/products/")({
   component: ProductsList,
 });
 
@@ -17,23 +16,32 @@ function fmtLkr(n: number | null) {
 function ProductsList() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
-  const [editingId, setEditingId] = useState<string | null | undefined>(undefined);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ["admin-products"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-products", page, q],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
-        .select("id, name, sku, price, discount_price, stock_quantity, status, featured, created_at, brands(name), categories!products_category_id_fkey(name), product_images(url)")
-        .order("created_at", { ascending: false });
+        .select("id, name, sku, price, discount_price, stock_quantity, status, featured, created_at, brands(name), categories!products_category_id_fkey(name), product_images(url)", { count: "exact" });
+      
+      if (q) {
+        query = query.or(`name.ilike.%${q}%,sku.ilike.%${q}%`);
+      }
+
+      const { data: productsData, error, count } = await query
+        .order("created_at", { ascending: false })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+        
       if (error) throw error;
-      return data ?? [];
+      return { products: productsData ?? [], total: count ?? 0 };
     },
   });
 
-  const filtered = (products ?? []).filter((p: any) =>
-    !q || p.name?.toLowerCase().includes(q.toLowerCase()) || p.sku?.toLowerCase().includes(q.toLowerCase()),
-  );
+  const products = data?.products ?? [];
+  const totalProducts = data?.total ?? 0;
+  const totalPages = Math.ceil(totalProducts / PAGE_SIZE) || 1;
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
@@ -50,12 +58,12 @@ function ProductsList() {
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Products</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your inventory, pricing, and variants.</p>
         </div>
-        <button
-          onClick={() => setEditingId(null)}
+        <Link
+          to="/admin/products/new"
           className="inline-flex items-center gap-2 h-11 px-6 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
           <Plus className="size-5" /> Add Product
-        </button>
+        </Link>
       </div>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -70,7 +78,7 @@ function ProductsList() {
             />
           </div>
           <div className="text-xs font-medium text-muted-foreground px-2">
-            Showing {filtered.length} of {products?.length ?? 0} products
+            Showing {products.length} of {totalProducts} products
           </div>
         </div>
         
@@ -97,7 +105,7 @@ function ProductsList() {
                     </div>
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : products.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-24 text-center">
                     <div className="max-w-xs mx-auto">
@@ -109,18 +117,18 @@ function ProductsList() {
                         {q ? "Try adjusting your search filters." : "Get started by adding your first product to the store."}
                       </p>
                       {!q && (
-                        <button 
-                          onClick={() => setEditingId(null)}
+                        <Link 
+                          to="/admin/products/new"
                           className="mt-4 text-primary font-bold text-sm hover:underline"
                         >
                           Add your first product
-                        </button>
+                        </Link>
                       )}
                     </div>
                   </td>
                 </tr>
               ) : (
-                filtered.map((p: any) => (
+                products.map((p: any) => (
                   <tr key={p.id} className="group hover:bg-accent/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
@@ -172,13 +180,14 @@ function ProductsList() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => setEditingId(p.id)} 
-                          className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors" 
+                        <Link 
+                          to="/admin/products/$productId"
+                          params={{ productId: p.id }}
+                          className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors block" 
                           title="Edit Product"
                         >
                           <Pencil className="size-4" />
-                        </button>
+                        </Link>
                         <button 
                           onClick={() => handleDelete(p.id, p.name)} 
                           className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors" 
@@ -194,18 +203,53 @@ function ProductsList() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-border bg-card flex items-center justify-between">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className="px-4 py-2 text-xs font-bold uppercase rounded-lg border border-border disabled:opacity-50 hover:bg-muted transition-colors"
+            >
+              Previous
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const p = i + 1;
+                // Show first, last, and pages around current page
+                if (totalPages > 7 && p !== 1 && p !== totalPages && Math.abs(page - p) > 1) {
+                  // Only show one ellipsis
+                  if (p === 2 && page > 3) return <span key={p} className="px-2 text-muted-foreground">...</span>;
+                  if (p === totalPages - 1 && page < totalPages - 2) return <span key={p} className="px-2 text-muted-foreground">...</span>;
+                  return null;
+                }
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={cn(
+                      "size-8 flex items-center justify-center text-xs font-bold rounded-lg transition-colors border",
+                      page === p 
+                        ? "bg-primary text-primary-foreground border-primary" 
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-muted"
+                    )}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              className="px-4 py-2 text-xs font-bold uppercase rounded-lg border border-border disabled:opacity-50 hover:bg-muted transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
-
-      {editingId !== undefined && (
-        <ProductForm 
-          productId={editingId} 
-          onClose={() => setEditingId(undefined)} 
-          onSuccess={() => {
-            setEditingId(undefined);
-            qc.invalidateQueries({ queryKey: ["admin-products"] });
-          }}
-        />
-      )}
     </div>
   );
 }
