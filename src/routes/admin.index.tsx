@@ -115,7 +115,7 @@ function Dashboard() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi icon={DollarSign} tone="emerald" label="Total Revenue" value={fmtLkr(18420000)} delta="+12.4%" />
         <Kpi icon={TrendingUp} tone="primary" label="Today's Revenue" value={fmtLkr(342500)} delta="+5.2%" />
         <Kpi icon={ShoppingBag} tone="sky" label="Orders" value="1,284" delta="+8.1%" />
