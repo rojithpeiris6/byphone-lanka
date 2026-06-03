@@ -147,14 +147,23 @@ export function BottomNav() {
 }
 
 export function Footer() {
-  const cols: { title: string; links: { label: string; to: string }[] }[] = [
+  const cols: { title: string; links: { label: string; to: string; search?: any }[] }[] = [
     {
       title: "Shop", links: [
-        { label: "Smartphones", to: "/shop" },
-        { label: "Tablets", to: "/shop" },
-        { label: "Smartwatches", to: "/shop" },
-        { label: "Earbuds", to: "/shop" },
-        { label: "Accessories", to: "/shop" },
+        { label: "Smartphones", to: "/shop", search: { category: "smartphones" } },
+        { label: "Tablets", to: "/shop", search: { category: "tablets" } },
+        { label: "Smartwatches", to: "/shop", search: { category: "smartwatches" } },
+        { label: "Earbuds", to: "/shop", search: { category: "earbuds" } },
+        { label: "Accessories", to: "/shop", search: { category: "accessories" } },
+      ]
+    },
+    {
+      title: "Top Brands", links: [
+        { label: "Apple iPhone", to: "/shop", search: { brand: "apple" } },
+        { label: "Samsung Galaxy", to: "/shop", search: { brand: "samsung" } },
+        { label: "Xiaomi", to: "/shop", search: { brand: "xiaomi" } },
+        { label: "OnePlus", to: "/shop", search: { brand: "oneplus" } },
+        { label: "Google Pixel", to: "/shop", search: { brand: "google" } },
       ]
     },
     {
@@ -167,18 +176,9 @@ export function Footer() {
       ]
     },
     {
-      title: "Company", links: [
-        { label: "About Us", to: "/" },
-        { label: "Stores", to: "/contact" },
-        { label: "Careers", to: "/" },
-        { label: "Blog", to: "/" },
-        { label: "Press", to: "/" },
-      ]
-    },
-    {
       title: "Legal", links: [
-        { label: "Privacy", to: "/privacy" },
-        { label: "Terms", to: "/terms" },
+        { label: "Privacy Policy", to: "/privacy" },
+        { label: "Terms of Service", to: "/terms" },
         { label: "Refund Policy", to: "/refund-policy" },
         { label: "Shipping Policy", to: "/shipping-policy" },
       ]
@@ -186,7 +186,7 @@ export function Footer() {
   ];
   return (
     <footer className="mt-20 border-t border-border bg-muted/40">
-      <div className="mx-auto max-w-7xl px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mx-auto max-w-7xl px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <div className="text-xl font-extrabold text-primary">buyphone<span className="text-foreground">.lk</span></div>
           <p className="mt-3 text-sm text-muted-foreground max-w-xs">Sri Lanka's premium destination for smartphones, tablets and tech accessories.</p>
@@ -195,7 +195,7 @@ export function Footer() {
           <div key={c.title}>
             <h4 className="text-sm font-bold mb-3">{c.title}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              {c.links.map((l) => <li key={l.label}><Link to={l.to} className="hover:text-primary transition-colors">{l.label}</Link></li>)}
+              {c.links.map((l) => <li key={l.label}><Link to={l.to} search={l.search} className="hover:text-primary transition-colors">{l.label}</Link></li>)}
             </ul>
           </div>
         ))}
