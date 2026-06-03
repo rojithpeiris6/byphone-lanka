@@ -153,7 +153,7 @@ function ShopPage() {
 
   const handleFilterChange = (filters: { brand?: string; category?: string; minPrice?: number; maxPrice?: number }) => {
     navigate({
-      search: (prev) => ({ 
+      search: (prev: any) => ({ 
         ...prev, 
         ...filters,
         page: 1 
@@ -163,13 +163,13 @@ function ShopPage() {
 
   const handleSortChange = (newSort: string) => {
     navigate({
-      search: (prev) => ({ ...prev, sort: newSort, page: 1 }),
+      search: (prev: any) => ({ ...prev, sort: newSort, page: 1 }),
     });
   };
 
   const handlePageChange = (newPage: number) => {
     navigate({
-      search: (prev) => ({ ...prev, page: newPage }),
+      search: (prev: any) => ({ ...prev, page: newPage }),
     });
   };
 
@@ -186,7 +186,7 @@ function ShopPage() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
+    <main className="mx-auto max-w-7xl px-4 py-6">
       <div className="flex items-end justify-between gap-3 mb-5">
         <div>
           <p className="text-xs text-muted-foreground">Home / Shop</p>
@@ -244,7 +244,7 @@ function ShopPage() {
 
           {/* Pagination Controls */}
           {!loadingProducts && products.length > 0 && totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 py-6">
+            <nav aria-label="Pagination" className="flex items-center justify-center gap-4 py-6">
               <button 
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1}
@@ -272,7 +272,7 @@ function ShopPage() {
               >
                 Next <ChevronRight className="size-4" />
               </button>
-            </div>
+            </nav>
           )}
         </div>
       </div>
@@ -291,6 +291,19 @@ function ShopPage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* JSON-LD ItemList Schema */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "itemListElement": products.map((p, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "url": `https://buyphone.lk/product/${p.slug}`
+          }))
+        })
+      }} />
+    </main>
   );
 }

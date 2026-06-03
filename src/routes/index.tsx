@@ -259,7 +259,7 @@ function Home() {
   });
 
   return (
-    <div>
+    <main>
       {/* HERO */}
       <section className="mx-auto max-w-7xl px-4 pt-4 sm:pt-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-soft via-primary-soft to-blue-100/60">
@@ -305,7 +305,7 @@ function Home() {
                   </div>
                 </div>
                 <div className="relative h-64 sm:h-80 lg:h-[520px]">
-                  <img src={heroContent.image} alt="Hero Banner" className="absolute inset-0 h-full w-full object-cover object-center" />
+                  <img src={heroContent.image} alt="Latest smartphones and tech deals in Sri Lanka" className="absolute inset-0 h-full w-full object-cover object-center" />
                 </div>
               </>
             )}
@@ -537,11 +537,8 @@ function Home() {
 
       {/* FAQ SECTION */}
       <section className="mx-auto max-w-3xl px-4 mt-14 mb-14">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-bold uppercase tracking-widest mb-4">
-            <HelpCircle className="size-3" /> Help Center
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Frequently Asked Questions</h2>
+        <div className="text-center mb-8">
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">FREQUENTLY ASKED QUESTIONS</h2>
         </div>
         <div className="space-y-4">
           {[
@@ -590,6 +587,17 @@ function Home() {
           <Feature Icon={Star} title="Trusted Store" sub="Thousands of happy customers" />
         </div>
       </section>
-    </div>
+
+      {/* JSON-LD WebPage Schema */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "buyphone.lk | Top Smartphone Deals & Tech in Sri Lanka",
+          "description": "Shop iPhone, Samsung, OnePlus, Xiaomi & more. 100% genuine with official warranty, free islandwide delivery and easy returns.",
+          "url": "https://buyphone.lk/"
+        })
+      }} />
+    </main>
   );
 }

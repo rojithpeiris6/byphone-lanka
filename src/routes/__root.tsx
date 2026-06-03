@@ -105,6 +105,39 @@ new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-WXCMVZ4M');` }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebSite",
+                "@id": "https://buyphone.lk/#website",
+                "url": "https://buyphone.lk/",
+                "name": "buyphone.lk",
+                "description": "Top Smartphone Deals & Tech in Sri Lanka",
+                "potentialAction": [{
+                  "@type": "SearchAction",
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "https://buyphone.lk/shop?brand={search_term_string}"
+                  },
+                  "query-input": "required name=search_term_string"
+                }]
+              },
+              {
+                "@type": "Organization",
+                "@id": "https://buyphone.lk/#organization",
+                "name": "buyphone.lk",
+                "url": "https://buyphone.lk/",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": "https://buyphone.lk/android-chrome-512x512.png"
+                },
+                "sameAs": []
+              }
+            ]
+          })
+        }} />
         <HeadContent />
       </head>
       <body>

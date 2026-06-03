@@ -364,7 +364,7 @@ function ProductPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 pb-32 lg:pb-6">
+    <article className="mx-auto max-w-7xl px-4 py-6 pb-32 lg:pb-6">
       <p className="text-xs text-muted-foreground">
         <Link to="/">Home</Link> <ChevronRight className="inline size-3" /> <Link to="/shop">{p.category}</Link> <ChevronRight className="inline size-3" /> <span className="text-foreground">{p.name}</span>
       </p>
@@ -382,7 +382,7 @@ function ProductPage() {
                   activeImage === imgUrl ? "border-primary scale-[1.03] shadow-sm" : "border-border hover:border-primary/50"
                 )}
               >
-                <img src={imgUrl} alt="" className="h-full w-full object-contain" />
+                <img src={imgUrl} alt={`${p.name} - Gallery Image ${i + 1}`} className="h-full w-full object-contain" />
               </button>
             ))}
           </div>
@@ -807,6 +807,35 @@ function ProductPage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* JSON-LD Product Schema */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": p.name,
+          "image": activeImage,
+          "description": p.description || p.name,
+          "sku": p.sku || p.id,
+          "brand": {
+            "@type": "Brand",
+            "name": p.brand
+          },
+          "offers": {
+            "@type": "Offer",
+            "url": `https://buyphone.lk/product/${p.slug}`,
+            "priceCurrency": "LKR",
+            "price": currentPrice,
+            "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+            "itemCondition": "https://schema.org/NewCondition"
+          },
+          "aggregateRating": p.reviews > 0 ? {
+            "@type": "AggregateRating",
+            "ratingValue": p.rating,
+            "reviewCount": p.reviews
+          } : undefined
+        })
+      }} />
+    </article>
   );
 }
