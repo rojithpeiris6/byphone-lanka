@@ -64,15 +64,15 @@ function Home() {
           toast.success("OTP sent to your phone");
         }
       } else {
-        const res = await verifyOtpFn({ 
-          data: { 
-            otp: subOtpCode, 
-            applicationId: subOtpAppId, 
+        const res = await verifyOtpFn({
+          data: {
+            otp: subOtpCode,
+            applicationId: subOtpAppId,
             referenceNo: subOtpRef,
             phone: subPhone
-          } 
+          }
         });
-        
+
         if (res.success) {
           toast.success("Successfully subscribed to tech updates!");
           setSubPhone("");
@@ -475,19 +475,21 @@ function Home() {
             <p className="text-slate-400 text-sm sm:text-base">Subscribe to our newsletter for exclusive deals, new arrivals, and tech tips delivered straight to your inbox.</p>
             <form onSubmit={handleSubSubmit} className="mt-8 flex flex-col gap-3 max-w-md mx-auto">
               {subOtpStep === "REQUEST" ? (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="tel"
-                    required
-                    maxLength={10}
-                    placeholder="Enter phone (e.g. 0771234567)"
-                    value={subPhone}
-                    onChange={(e) => setSubPhone(e.target.value.replace(/\D/g, ''))}
-                    className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                  />
-                  <button type="submit" disabled={isSubmittingSub || !subPhone.trim()} className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-50 inline-flex items-center justify-center gap-2">
-                    {isSubmittingSub ? <Loader2 className="size-4 animate-spin" /> : "Subscribe"}
-                  </button>
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="tel"
+                      required
+                      maxLength={10}
+                      placeholder="Enter phone (e.g. 0771234567)"
+                      value={subPhone}
+                      onChange={(e) => setSubPhone(e.target.value.replace(/\D/g, ''))}
+                      className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    />
+                    <button type="submit" disabled={isSubmittingSub || !subPhone.trim()} className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                      {isSubmittingSub ? <Loader2 className="size-4 animate-spin" /> : "Subscribe"}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -526,7 +528,7 @@ function Home() {
                 </div>
               )}
             </form>
-            <p className="text-[10px] text-slate-500">We respect your privacy. Unsubscribe at any time.</p>
+            <p className="text-[10px] text-slate-500">Rs 5+tax p/d. We respect your privacy. Unsubscribe at any time.</p>
           </div>
           <div className="absolute -top-24 -left-24 size-64 bg-primary/20 rounded-full blur-3xl" />
           <div className="absolute -bottom-24 -right-24 size-64 bg-blue-500/10 rounded-full blur-3xl" />
