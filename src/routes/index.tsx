@@ -542,10 +542,10 @@ function Home() {
         </div>
         <div className="space-y-4">
           {[
-            { q: "Do you provide official warranties?", a: "Yes, all our products come with a 1-year official manufacturer warranty. We are authorized partners for the brands we carry." },
-            { q: "How long does delivery take?", a: "Standard delivery takes 2-3 working days islandwide. Express delivery can be delivered within 1 working day for an additional fee." },
-            { q: "What is your return policy?", a: "We offer a 7-day return policy for unused products in their original packaging with the original receipt." },
-            { q: "Do you accept installment payments?", a: "Yes, we support KOKO and MintPay for flexible 3-month interest-free installments on eligible products." },
+            { q: "Do you provide official warranties?", a: "Yes, all products sold at buyphone.lk come with a 1-year official manufacturer warranty. We are authorized partners in Sri Lanka." },
+            { q: "How long does delivery take?", a: "buyphone.lk offers free islandwide delivery across Sri Lanka. Orders within Colombo typically arrive within 24 hours." },
+            { q: "What is your return policy?", a: "buyphone.lk offers a 7-day return policy for unused products in their original sealed packaging with the original receipt." },
+            { q: "Do you accept installment payments?", a: "Yes, buyphone.lk supports KOKO and MintPay for flexible 3-month interest-free installments on eligible products in Sri Lanka." },
           ].map((faq, i) => (
             <div key={i} className="p-5 rounded-2xl border border-border bg-card hover:border-primary/30 transition-colors">
               <h3 className="font-bold text-sm sm:text-base mb-2 flex items-start gap-2">
@@ -585,6 +585,16 @@ function Home() {
           <Feature Icon={ShieldCheck} title="Secure Payments" sub="100% secure checkout" />
           <Feature Icon={CreditCard} title="Multiple Payment Options" sub="Card, Bank Transfer, COD" />
           <Feature Icon={Star} title="Trusted Store" sub="Thousands of happy customers" />
+        </div>
+      </section>
+
+      {/* ABOUT US / GEO */}
+      <section className="mx-auto max-w-7xl px-4 mt-14 mb-8">
+        <div className="rounded-3xl bg-card border border-border p-8 text-center max-w-4xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mb-4">About buyphone.lk</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            <strong>buyphone.lk</strong> is Sri Lanka's premier online destination for 100% genuine smartphones, tablets, and tech accessories. Headquartered in Colombo, we pride ourselves on offering the latest devices from top global brands like Apple, Samsung, Xiaomi, and OnePlus, all backed by official company warranties. With guaranteed free islandwide delivery across Sri Lanka and a secure shopping experience, we are the most trusted tech retailer for authentic mobile devices.
+          </p>
         </div>
       </section>
 

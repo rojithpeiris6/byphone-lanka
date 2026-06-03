@@ -548,6 +548,16 @@ function ProductPage() {
                   {p.highlights.map((h: any) => <li key={h}>{h}</li>)}
                 </ul>
               )}
+              
+              <div className="mt-8 rounded-2xl bg-primary-soft p-5 border border-primary/10">
+                <h3 className="font-bold text-base mb-3">Why buy the {p.name} from buyphone.lk?</h3>
+                <ul className="space-y-2 text-xs sm:text-sm text-foreground">
+                  <li>✅ <strong>100% Genuine:</strong> Authentic {p.brand} product in original factory packaging.</li>
+                  <li>✅ <strong>Official Warranty:</strong> Covered by a full 1-year authorized manufacturer warranty in Sri Lanka.</li>
+                  <li>✅ <strong>Free Islandwide Delivery:</strong> Fast, secure, and free shipping straight to your doorstep anywhere in Sri Lanka.</li>
+                  <li>✅ <strong>Trusted Retailer:</strong> buyphone.lk is Colombo's premier destination for original smartphones and accessories.</li>
+                </ul>
+              </div>
             </div>
           )}
           {tab === "reviews" && (

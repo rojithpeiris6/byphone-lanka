@@ -133,6 +133,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                   "@type": "ImageObject",
                   "url": "https://buyphone.lk/android-chrome-512x512.png"
                 },
+                "description": "Sri Lanka's premier online destination for 100% genuine smartphones and tech accessories.",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "Colombo",
+                  "addressCountry": "LK"
+                },
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "contactType": "customer service",
+                  "areaServed": "LK",
+                  "availableLanguage": ["English", "Sinhala"]
+                },
                 "sameAs": []
               }
             ]
