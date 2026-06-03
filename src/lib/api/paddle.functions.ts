@@ -6,7 +6,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 async function getPaddle() {
   const { Environment, Paddle } = await import("@paddle/paddle-node-sdk");
   const paddleApiKey = process.env.PADDLE_API_KEY || "";
-  const isSandbox = process.env.PADDLE_ENVIRONMENT === "sandbox";
+  if (!paddleApiKey) {
+    throw new Error("PADDLE_API_KEY is missing from .env! Please restart your dev server if you just added it.");
+  }
+  const isSandbox = process.env.VITE_PADDLE_ENVIRONMENT === "sandbox" || process.env.PADDLE_ENVIRONMENT === "sandbox";
   return new Paddle(paddleApiKey, {
     environment: isSandbox ? Environment.sandbox : Environment.production,
   });

@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle } from "lucide-react";
+import { ArrowRight, ChevronRight, Truck, ShieldCheck, RotateCcw, Headphones, CreditCard, Star, Sparkles, Timer, Mail, HelpCircle, Loader2 } from "lucide-react";
 import heroDefault from "@/assets/hero-phones.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
+import { requestOtpFn, verifyOtpFn } from "@/lib/api/ideamart.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,10 +41,56 @@ function Feature({ Icon, title, sub }: { Icon: any; title: string; sub: string }
 }
 
 function Home() {
+  const [subPhone, setSubPhone] = useState("");
+  const [subOtpStep, setSubOtpStep] = useState<"REQUEST" | "VERIFY">("REQUEST");
+  const [subOtpCode, setSubOtpCode] = useState("");
+  const [subOtpRef, setSubOtpRef] = useState("");
+  const [subOtpAppId, setSubOtpAppId] = useState("");
+  const [isSubmittingSub, setIsSubmittingSub] = useState(false);
+
+  const handleSubSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (subOtpStep === "REQUEST" && !subPhone.trim()) return;
+    if (subOtpStep === "VERIFY" && !subOtpCode.trim()) return;
+
+    setIsSubmittingSub(true);
+    try {
+      if (subOtpStep === "REQUEST") {
+        const res = await requestOtpFn({ data: { subscriberId: subPhone } });
+        if (res.success) {
+          setSubOtpRef(res.referenceNo);
+          setSubOtpAppId(res.applicationId);
+          setSubOtpStep("VERIFY");
+          toast.success("OTP sent to your phone");
+        }
+      } else {
+        const res = await verifyOtpFn({ 
+          data: { 
+            otp: subOtpCode, 
+            applicationId: subOtpAppId, 
+            referenceNo: subOtpRef,
+            phone: subPhone
+          } 
+        });
+        
+        if (res.success) {
+          toast.success("Successfully subscribed to tech updates!");
+          setSubPhone("");
+          setSubOtpCode("");
+          setSubOtpStep("REQUEST");
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to process request");
+    } finally {
+      setIsSubmittingSub(false);
+    }
+  };
+
   const now = new Date().toISOString();
 
   // Fetch Homepage Settings
-  const { data: heroSettings } = useQuery({
+  const { data: heroSettings, isLoading: isHeroLoading } = useQuery({
     queryKey: ["home-hero-settings"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("settings").select("value").eq("key", "homepage_hero").single();
@@ -89,7 +137,7 @@ function Home() {
   });
 
   // Fetch Parent Categories
-  const { data: dbCategories } = useQuery({
+  const { data: dbCategories, isLoading: isCategoriesLoading } = useQuery({
     queryKey: ["home-categories"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -105,7 +153,7 @@ function Home() {
   });
 
   // Fetch Brands with Logos
-  const { data: dbBrands } = useQuery({
+  const { data: dbBrands, isLoading: isBrandsLoading } = useQuery({
     queryKey: ["home-brands-visual"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -119,7 +167,7 @@ function Home() {
   });
 
   // Fetch Popular Products - Exclude Flash Sale Items
-  const { data: dbPopular } = useQuery({
+  const { data: dbPopular, isLoading: isPopularLoading } = useQuery({
     queryKey: ["home-popular", activeFlashSaleIds],
     queryFn: async () => {
       const idsToExclude = activeFlashSaleIds || [];
@@ -184,7 +232,7 @@ function Home() {
   });
 
   // Fetch New Arrivals - Exclude Flash Sale Items
-  const { data: dbNewArrivals } = useQuery({
+  const { data: dbNewArrivals, isLoading: isNewArrivalsLoading } = useQuery({
     queryKey: ["home-new-arrivals", activeFlashSaleIds],
     queryFn: async () => {
       const idsToExclude = activeFlashSaleIds || [];
@@ -216,33 +264,51 @@ function Home() {
       <section className="mx-auto max-w-7xl px-4 pt-4 sm:pt-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-soft via-primary-soft to-blue-100/60">
           <div className="grid lg:grid-cols-2 items-center">
-            <div className="px-6 sm:px-10 py-10 sm:py-16 lg:py-20">
-              <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-full px-3 py-1 text-[11px] font-bold tracking-wide">
-                <Sparkles className="size-3" /> NEW ARRIVAL
-              </span>
-              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
-                {renderTitle()}
-              </h1>
-              <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
-                {heroContent.description}
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link to="/shop" className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-bold hover:bg-primary-dark transition-colors shadow-[var(--shadow-soft)]">
-                  SHOP NOW <ArrowRight className="size-4" />
-                </Link>
-                <Link to="/shop" className="inline-flex items-center gap-2 bg-background text-foreground rounded-full px-6 py-3 text-sm font-bold border border-border hover:border-primary hover:text-primary transition-colors">
-                  View Deals
-                </Link>
-              </div>
-              <div className="mt-8 flex items-center gap-1.5">
-                <span className="h-1.5 w-8 rounded-full bg-primary" />
-                <span className="h-1.5 w-2 rounded-full bg-primary/30" />
-                <span className="h-1.5 w-2 rounded-full bg-primary/30" />
-              </div>
-            </div>
-            <div className="relative h-64 sm:h-80 lg:h-[520px]">
-              <img src={heroContent.image} alt="Hero Banner" className="absolute inset-0 h-full w-full object-cover object-center" />
-            </div>
+            {isHeroLoading ? (
+              <>
+                <div className="px-6 sm:px-10 py-10 sm:py-16 lg:py-20 flex flex-col gap-4">
+                  <div className="h-6 w-32 bg-primary/20 rounded-full animate-pulse" />
+                  <div className="h-14 sm:h-16 lg:h-20 w-3/4 bg-primary/20 rounded-2xl animate-pulse mt-2" />
+                  <div className="h-14 sm:h-16 lg:h-20 w-2/3 bg-primary/20 rounded-2xl animate-pulse" />
+                  <div className="h-4 w-full bg-primary/20 rounded-full animate-pulse mt-2" />
+                  <div className="h-4 w-5/6 bg-primary/20 rounded-full animate-pulse" />
+                  <div className="mt-5 flex gap-3">
+                    <div className="h-12 w-36 bg-primary/20 rounded-full animate-pulse" />
+                    <div className="h-12 w-36 bg-primary/20 rounded-full animate-pulse" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="px-6 sm:px-10 py-10 sm:py-16 lg:py-20">
+                  <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-full px-3 py-1 text-[11px] font-bold tracking-wide">
+                    <Sparkles className="size-3" /> NEW ARRIVAL
+                  </span>
+                  <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+                    {renderTitle()}
+                  </h1>
+                  <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md">
+                    {heroContent.description}
+                  </p>
+                  <div className="mt-7 flex flex-wrap gap-3">
+                    <Link to="/shop" className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-bold hover:bg-primary-dark transition-colors shadow-[var(--shadow-soft)]">
+                      SHOP NOW <ArrowRight className="size-4" />
+                    </Link>
+                    <Link to="/shop" className="inline-flex items-center gap-2 bg-background text-foreground rounded-full px-6 py-3 text-sm font-bold border border-border hover:border-primary hover:text-primary transition-colors">
+                      View Deals
+                    </Link>
+                  </div>
+                  <div className="mt-8 flex items-center gap-1.5">
+                    <span className="h-1.5 w-8 rounded-full bg-primary" />
+                    <span className="h-1.5 w-2 rounded-full bg-primary/30" />
+                    <span className="h-1.5 w-2 rounded-full bg-primary/30" />
+                  </div>
+                </div>
+                <div className="relative h-64 sm:h-80 lg:h-[520px]">
+                  <img src={heroContent.image} alt="Hero Banner" className="absolute inset-0 h-full w-full object-cover object-center" />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -263,14 +329,23 @@ function Home() {
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">SHOP BY CATEGORY</h2>
         </div>
         <div className="mt-6 flex lg:grid lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
-          {dbCategories?.map((c) => (
-            <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
-              <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
-                <img src={c.image || ""} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+          {isCategoriesLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
+                <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary/10 animate-pulse" />
+                <div className="h-4 w-16 bg-primary/10 rounded animate-pulse" />
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
-            </Link>
-          ))}
+            ))
+          ) : (
+            dbCategories?.map((c) => (
+              <Link to="/shop" search={{ category: c.name }} key={c.name} className="group flex-shrink-0 w-28 sm:w-32 lg:w-auto flex flex-col items-center gap-2">
+                <div className="size-24 sm:size-28 lg:size-32 rounded-full bg-primary-soft grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
+                  <img src={c.image || ""} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+                </div>
+                <span className="text-xs sm:text-sm font-semibold text-center">{c.name}</span>
+              </Link>
+            ))
+          )}
         </div>
         <div className="mt-6 text-center">
           <Link to="/categories" className="inline-flex items-center gap-1 text-primary text-sm font-bold">VIEW ALL CATEGORIES <ChevronRight className="size-4" /></Link>
@@ -309,19 +384,31 @@ function Home() {
           <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-          {dbPopular?.map((p: any) => <ProductCard key={p.id} p={p} />)}
+          {isPopularLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-[340px] rounded-2xl bg-primary/10 animate-pulse" />
+            ))
+          ) : (
+            dbPopular?.map((p: any) => <ProductCard key={p.id} p={p} />)
+          )}
         </div>
       </section>
 
       {/* NEW ARRIVALS */}
-      {dbNewArrivals && dbNewArrivals.length > 0 && (
+      {(isNewArrivalsLoading || (dbNewArrivals && dbNewArrivals.length > 0)) && (
         <section className="mx-auto max-w-7xl px-4 mt-14">
           <div className="flex items-end justify-between mb-5">
             <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">NEW ARRIVALS</h2>
             <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">Browse All <ChevronRight className="size-4" /></Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-            {dbNewArrivals.map((p: any) => <ProductCard key={p.id} p={p} />)}
+            {isNewArrivalsLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[340px] rounded-2xl bg-primary/10 animate-pulse" />
+              ))
+            ) : (
+              dbNewArrivals?.map((p: any) => <ProductCard key={p.id} p={p} />)
+            )}
           </div>
         </section>
       )}
@@ -353,18 +440,27 @@ function Home() {
           <Link to="/brands" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-4">
-          {dbBrands?.map((b) => (
-            <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group flex flex-col items-center gap-2">
-              <div className="w-full aspect-square rounded-full border border-border bg-card grid place-items-center overflow-hidden transition-all group-hover:border-primary group-hover:shadow-sm">
-                {b.logo ? (
-                  <img src={b.logo} alt={b.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                ) : (
-                  <span className="text-[10px] font-bold text-muted-foreground text-center leading-none">{b.name}</span>
-                )}
+          {isBrandsLoading ? (
+            Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="group flex flex-col items-center gap-2">
+                <div className="w-full aspect-square rounded-full bg-primary/10 animate-pulse" />
+                <div className="h-4 w-12 bg-primary/10 rounded animate-pulse" />
               </div>
-              <span className="text-xs font-semibold text-center">{b.name}</span>
-            </Link>
-          ))}
+            ))
+          ) : (
+            dbBrands?.map((b) => (
+              <Link to="/shop" search={{ brand: b.name }} key={b.name} className="group flex flex-col items-center gap-2">
+                <div className="w-full aspect-square rounded-full border border-border bg-card grid place-items-center overflow-hidden transition-all group-hover:border-primary group-hover:shadow-sm">
+                  {b.logo ? (
+                    <img src={b.logo} alt={b.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-muted-foreground text-center leading-none">{b.name}</span>
+                  )}
+                </div>
+                <span className="text-xs font-semibold text-center">{b.name}</span>
+              </Link>
+            ))
+          )}
         </div>
       </section>
 
@@ -377,16 +473,58 @@ function Home() {
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Get the latest tech updates</h2>
             <p className="text-slate-400 text-sm sm:text-base">Subscribe to our newsletter for exclusive deals, new arrivals, and tech tips delivered straight to your inbox.</p>
-            <form className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                required
-                className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-              />
-              <button className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
-                Subscribe
-              </button>
+            <form onSubmit={handleSubSubmit} className="mt-8 flex flex-col gap-3 max-w-md mx-auto">
+              {subOtpStep === "REQUEST" ? (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="tel"
+                    required
+                    maxLength={10}
+                    placeholder="Enter phone (e.g. 0771234567)"
+                    value={subPhone}
+                    onChange={(e) => setSubPhone(e.target.value.replace(/\D/g, ''))}
+                    className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                  />
+                  <button type="submit" disabled={isSubmittingSub || !subPhone.trim()} className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                    {isSubmittingSub ? <Loader2 className="size-4 animate-spin" /> : "Subscribe"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      placeholder="Enter 6-digit OTP"
+                      value={subOtpCode}
+                      onChange={(e) => setSubOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary transition-all text-center tracking-widest font-bold"
+                    />
+                    <button type="submit" disabled={isSubmittingSub || !subOtpCode.trim()} className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                      {isSubmittingSub ? <Loader2 className="size-4 animate-spin" /> : "Verify OTP"}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between px-2">
+                    <button type="button" onClick={() => setSubOtpStep("REQUEST")} className="text-[11px] text-slate-400 hover:text-white font-semibold">Change Number</button>
+                    <button type="button" disabled={isSubmittingSub} onClick={async () => {
+                      setIsSubmittingSub(true);
+                      try {
+                        const res = await requestOtpFn({ data: { subscriberId: subPhone } });
+                        if (res.success) {
+                          setSubOtpRef(res.referenceNo);
+                          setSubOtpAppId(res.applicationId);
+                          toast.success("OTP resent successfully");
+                        }
+                      } catch (error: any) {
+                        toast.error(error.message || "Failed to resend OTP");
+                      } finally {
+                        setIsSubmittingSub(false);
+                      }
+                    }} className="text-[11px] text-primary hover:text-primary-foreground font-bold">Resend OTP</button>
+                  </div>
+                </div>
+              )}
             </form>
             <p className="text-[10px] text-slate-500">We respect your privacy. Unsubscribe at any time.</p>
           </div>

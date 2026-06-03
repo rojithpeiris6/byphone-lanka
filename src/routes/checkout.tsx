@@ -306,7 +306,7 @@ function Checkout() {
 
             <div className="mt-5 space-y-4">
               <div className="grid gap-3">
-                <PayOption
+                {/* <PayOption
                   id="card"
                   value={payment}
                   onChange={setPayment}
@@ -314,7 +314,7 @@ function Checkout() {
                   title="Card Payment"
                   sub="Visa, Mastercard via Secure Gateways"
                   right="INSTANT"
-                />
+                /> */}
 
                 <PayOption
                   id="cod"

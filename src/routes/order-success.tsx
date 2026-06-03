@@ -1,16 +1,57 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
-import { CheckCircle2, ShoppingBag, ArrowRight, Package, Truck } from "lucide-react";
+import { CheckCircle2, ShoppingBag, ArrowRight, Package, Truck, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { verifyPaddlePayment } from "@/lib/api/paddle.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/order-success")({
   validateSearch: z.object({
     orderNumber: z.string().optional(),
+    _ptxn: z.string().optional(),
   }),
   component: OrderSuccessPage,
 });
 
 function OrderSuccessPage() {
-  const { orderNumber } = Route.useSearch();
+  const { orderNumber, _ptxn } = Route.useSearch();
+  const [verifying, setVerifying] = useState(!!_ptxn);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function verifyPayment() {
+      if (!_ptxn || !orderNumber) return;
+      
+      try {
+        // Find the internal order ID from the order number
+        const { data: order } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("order_number", orderNumber)
+          .single();
+          
+        if (order) {
+          // Call the server function to verify and save the payment record
+          await verifyPaddlePayment({
+            data: {
+              transactionId: _ptxn,
+              orderId: order.id,
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to verify paddle payment:", err);
+      } finally {
+        setVerifying(false);
+        // Clean up the URL so _ptxn doesn't stay visible
+        router.navigate({ to: "/order-success", search: { orderNumber }, replace: true });
+      }
+    }
+
+    if (_ptxn) {
+      verifyPayment();
+    }
+  }, [_ptxn, orderNumber, router]);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
@@ -20,9 +61,13 @@ function OrderSuccessPage() {
         </div>
         
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight">Thank you for your order!</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            {verifying ? "Verifying Payment..." : "Thank you for your order!"}
+          </h1>
           <p className="text-muted-foreground">
-            Your order has been placed successfully. We've sent a confirmation email to your inbox.
+            {verifying 
+              ? "Please wait a moment while we confirm your payment details." 
+              : "Your order has been placed successfully. We've sent a confirmation email to your inbox."}
           </p>
         </div>
 

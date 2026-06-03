@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { FlashSaleTimer } from "@/components/FlashSaleTimer";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 import { cn } from "@/lib/utils";
+import { requestOtpFn, verifyOtpFn } from "@/lib/api/ideamart.functions";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -29,9 +30,9 @@ export const Route = createFileRoute("/product/$slug")({
 
     if (error || !product) throw notFound();
 
-    const activeFlashSale = (product.flash_sales as any)?.find((s: any) => 
-      s.is_active && 
-      new Date(s.start_at) <= new Date(now) && 
+    const activeFlashSale = (product.flash_sales as any)?.find((s: any) =>
+      s.is_active &&
+      new Date(s.start_at) <= new Date(now) &&
       new Date(s.end_at) >= new Date(now)
     );
 
@@ -62,7 +63,7 @@ export const Route = createFileRoute("/product/$slug")({
       reviews: 0,
     }));
 
-    return { 
+    return {
       product: {
         ...product,
         brand: product.brands?.name || "Unknown Brand",
@@ -124,6 +125,15 @@ function ProductPage() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Notify Me states
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
+  const [notifyPhone, setNotifyPhone] = useState("");
+  const [otpStep, setOtpStep] = useState<"REQUEST" | "VERIFY">("REQUEST");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpRef, setOtpRef] = useState("");
+  const [otpAppId, setOtpAppId] = useState("");
+  const [isSubmittingNotify, setIsSubmittingNotify] = useState(false);
 
   const { user } = useAuth();
 
@@ -231,8 +241,8 @@ function ProductPage() {
     qc.invalidateQueries({ queryKey: ["customer-wishlist", user.id] });
   };
 
-  const selectedVariant = useMemo(() => 
-    p.variants?.find((v: any) => v.id === selectedVariantId), 
+  const selectedVariant = useMemo(() =>
+    p.variants?.find((v: any) => v.id === selectedVariantId),
     [p.variants, selectedVariantId]
   );
 
@@ -249,7 +259,7 @@ function ProductPage() {
   }, [p.oldPrice, selectedVariant]);
 
   const hasVariants = p.variants && p.variants.length > 0;
-  
+
   // Base isOutOfStock logic
   const isOutOfStock = useMemo(() => {
     if (hasVariants) {
@@ -312,6 +322,47 @@ function ProductPage() {
     }
   }
 
+  async function handleNotifySubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (otpStep === "REQUEST" && !notifyPhone.trim()) return;
+    if (otpStep === "VERIFY" && !otpCode.trim()) return;
+
+    setIsSubmittingNotify(true);
+    try {
+      if (otpStep === "REQUEST") {
+        const res = await requestOtpFn({ data: { subscriberId: notifyPhone } });
+        if (res.success) {
+          setOtpRef(res.referenceNo);
+          setOtpAppId(res.applicationId);
+          setOtpStep("VERIFY");
+          toast.success("OTP sent to your phone");
+        }
+      } else {
+        const res = await verifyOtpFn({
+          data: {
+            otp: otpCode,
+            applicationId: otpAppId,
+            referenceNo: otpRef,
+            productId: p.id,
+            phone: notifyPhone
+          }
+        });
+
+        if (res.success) {
+          toast.success("Notification set!", { description: `We'll text ${notifyPhone} when it's back.` });
+          setIsNotifyModalOpen(false);
+          setNotifyPhone("");
+          setOtpCode("");
+          setOtpStep("REQUEST");
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to process request");
+    } finally {
+      setIsSubmittingNotify(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-32 lg:pb-6">
       <p className="text-xs text-muted-foreground">
@@ -323,8 +374,8 @@ function ProductPage() {
         <div className="lg:flex gap-4">
           <div className="hidden lg:flex flex-col gap-2 w-20 shrink-0">
             {allImages.map((imgUrl, i) => (
-              <button 
-                key={i} 
+              <button
+                key={i}
                 onClick={() => setActiveImage(imgUrl)}
                 className={cn(
                   "aspect-square rounded-xl border-2 overflow-hidden bg-muted/40 transition-all p-1",
@@ -335,17 +386,17 @@ function ProductPage() {
               </button>
             ))}
           </div>
-          
-          <div 
+
+          <div
             className="relative flex-1 aspect-square rounded-2xl bg-muted/40 grid place-items-center overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
             onClick={() => setIsLightboxOpen(true)}
           >
-            <img 
-              src={activeImage} 
-              alt={p.name} 
-              width={800} 
-              height={800} 
-              className={cn("h-full w-full object-contain p-6", isOutOfStock && isMounted && "grayscale opacity-80")} 
+            <img
+              src={activeImage}
+              alt={p.name}
+              width={800}
+              height={800}
+              className={cn("h-full w-full object-contain p-6", isOutOfStock && isMounted && "grayscale opacity-80")}
             />
             <div className="absolute top-4 right-4 size-9 grid place-items-center rounded-full bg-background/80 border border-border pointer-events-none shadow-sm backdrop-blur-sm">
               <Maximize2 className="size-4" />
@@ -406,14 +457,14 @@ function ProductPage() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {p.variants.map((v: any) => (
-                  <button 
-                    key={v.id} 
-                    onClick={() => setSelectedVariantId(v.id)} 
+                  <button
+                    key={v.id}
+                    onClick={() => setSelectedVariantId(v.id)}
                     disabled={v.stock_quantity <= 0}
                     className={cn(
                       "flex items-center px-4 py-3 rounded-xl border-2 text-left transition-all",
-                      selectedVariantId === v.id 
-                        ? "border-primary bg-primary-soft text-primary ring-2 ring-primary/20" 
+                      selectedVariantId === v.id
+                        ? "border-primary bg-primary-soft text-primary ring-2 ring-primary/20"
                         : "border-border hover:border-foreground/30",
                       v.stock_quantity <= 0 && "opacity-50 cursor-not-allowed bg-muted"
                     )}
@@ -440,25 +491,32 @@ function ProductPage() {
           </div>
 
           <div className="hidden lg:flex mt-6 gap-3">
-            <button 
-              onClick={handleAdd} 
-              disabled={isAddDisabled && isMounted}
-              className={cn(
-                "flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide transition-all uppercase",
-                isOutOfStock && isMounted 
-                  ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
-                  : "bg-primary text-primary-foreground hover:bg-primary-dark shadow-lg shadow-primary/20"
-              )}
-            >
-              {isOutOfStock && isMounted ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
-            </button>
-            <button 
+            {isOutOfStock && isMounted ? (
+              <button
+                onClick={() => setIsNotifyModalOpen(true)}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide transition-all uppercase bg-primary text-primary-foreground hover:bg-primary-dark shadow-lg shadow-primary/20"
+              >
+                NOTIFY ME
+              </button>
+            ) : (
+              <button
+                onClick={handleAdd}
+                disabled={isAddDisabled && isMounted}
+                className={cn(
+                  "flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide transition-all uppercase",
+                  "bg-primary text-primary-foreground hover:bg-primary-dark shadow-lg shadow-primary/20"
+                )}
+              >
+                {hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART"}
+              </button>
+            )}
+            <button
               onClick={toggleWishlist}
               aria-label={wishlist ? "Remove from wishlist" : "Add to wishlist"}
               className={cn(
                 "size-14 grid place-items-center border-2 rounded-2xl transition-all active:scale-95",
-                wishlist 
-                  ? "bg-rose-50 border-rose-200 text-rose-500 shadow-inner" 
+                wishlist
+                  ? "bg-rose-50 border-rose-200 text-rose-500 shadow-inner"
                   : "border-primary/30 text-primary hover:bg-primary-soft"
               )}
             >
@@ -604,21 +662,21 @@ function ProductPage() {
 
       {/* Lightbox */}
       {isLightboxOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setIsLightboxOpen(false)}
         >
-          <button 
+          <button
             className="absolute top-4 right-4 p-2 text-white/80 hover:text-white rounded-full bg-white/10"
             onClick={() => setIsLightboxOpen(false)}
           >
             <X className="size-6" />
           </button>
-          <img 
-            src={activeImage} 
-            alt={p.name} 
+          <img
+            src={activeImage}
+            alt={p.name}
             className="max-h-[90vh] max-w-full object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()} 
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}
@@ -626,24 +684,129 @@ function ProductPage() {
       {/* Mobile sticky purchase */}
       <div className="lg:hidden fixed bottom-[64px] inset-x-0 z-30 bg-background/95 backdrop-blur border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-3">
-          <div>
-            <p className="text-[10px] uppercase text-muted-foreground font-semibold">Price</p>
-            <p className="text-lg font-extrabold text-primary leading-tight">{formatLKR(currentPrice)}</p>
-          </div>
-          <button 
-            onClick={handleAdd} 
-            disabled={isAddDisabled && isMounted}
-            className={cn(
-              "flex-1 rounded-2xl py-3 text-sm font-bold inline-flex items-center justify-center gap-2 transition-all uppercase",
-              isOutOfStock && isMounted 
-                ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
-                : "bg-primary text-primary-foreground"
-            )}
-          >
-            {isOutOfStock && isMounted ? "OUT OF STOCK" : (hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART")}
-          </button>
+          {isOutOfStock && isMounted ? (
+            <button
+              onClick={() => setIsNotifyModalOpen(true)}
+              className="w-full rounded-2xl py-3.5 text-sm font-bold inline-flex items-center justify-center gap-2 transition-all uppercase bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+            >
+              NOTIFY ME
+            </button>
+          ) : (
+            <button
+              onClick={handleAdd}
+              disabled={isAddDisabled && isMounted}
+              className="w-full rounded-2xl py-3.5 text-sm font-bold inline-flex items-center justify-center gap-2 transition-all uppercase bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+            >
+              {hasVariants && !selectedVariantId ? "CHOOSE CONFIGURATION" : "ADD TO CART"}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Notify Modal */}
+      {isNotifyModalOpen && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => {
+            setIsNotifyModalOpen(false);
+            setOtpStep("REQUEST");
+          }}
+        >
+          <div
+            className="bg-background rounded-2xl p-6 w-full max-w-sm relative shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-4 right-4 p-1.5 text-muted-foreground hover:text-foreground rounded-full bg-muted/50 hover:bg-muted transition-colors"
+              onClick={() => {
+                setIsNotifyModalOpen(false);
+                setOtpStep("REQUEST");
+              }}
+            >
+              <X className="size-4" />
+            </button>
+            <h3 className="text-xl font-extrabold mb-2">Enable Notifications</h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              Enter your phone number and we'll let you know when <strong>{p.name}</strong> is back in stock.
+            </p>
+            <form onSubmit={handleNotifySubmit} className="space-y-4">
+              {otpStep === "REQUEST" ? (
+                <div>
+                  <input
+                    type="tel"
+                    required
+                    maxLength={10}
+                    placeholder="e.g. 0771234567"
+                    value={notifyPhone}
+                    onChange={(e) => setNotifyPhone(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:border-primary outline-none transition-all"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Enter the OTP sent to {notifyPhone}</p>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      placeholder="Enter OTP"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:border-primary outline-none transition-all text-center tracking-widest font-bold"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setOtpStep("REQUEST")}
+                      className="text-muted-foreground hover:text-foreground font-semibold"
+                    >
+                      Change Number
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmittingNotify}
+                      onClick={async () => {
+                        setIsSubmittingNotify(true);
+                        try {
+                          const res = await requestOtpFn({ data: { subscriberId: notifyPhone } });
+                          if (res.success) {
+                            setOtpRef(res.referenceNo);
+                            setOtpAppId(res.applicationId);
+                            toast.success("OTP resent successfully");
+                          }
+                        } catch (error: any) {
+                          toast.error(error.message || "Failed to resend OTP");
+                        } finally {
+                          setIsSubmittingNotify(false);
+                        }
+                      }}
+                      className="text-primary hover:text-primary-dark font-bold disabled:opacity-50"
+                    >
+                      Resend OTP
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <button
+                  type="submit"
+                  disabled={isSubmittingNotify || (otpStep === "REQUEST" ? !notifyPhone.trim() : !otpCode.trim())}
+                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider hover:bg-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmittingNotify ? <Loader2 className="size-4 animate-spin" /> : (otpStep === "REQUEST" ? "Request OTP" : "Verify & Set Alert")}
+                </button>
+                {otpStep === "REQUEST" && (
+                  <p className="text-center text-[10px] text-muted-foreground/80 font-medium">
+                    Rs 5+tax p/d.
+                  </p>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
