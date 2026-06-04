@@ -164,7 +164,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const isAdmin = path.startsWith("/admin");
+  const isPlainLayout = path.startsWith("/admin") || path === "/";
 
   const authModalOpen = useAuthModalStore((s) => s.isOpen);
   const authModalClose = useAuthModalStore((s) => s.close);
@@ -173,7 +173,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AdminAuthProvider>
         <CustomerAuthProvider>
-          {isAdmin ? (
+          {isPlainLayout ? (
             <>
               <Outlet />
               <Toaster position="top-center" richColors />

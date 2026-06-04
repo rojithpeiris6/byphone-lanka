@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const IDEAMART_APP_ID_MOBITEL = "APP_007258";
-const IDEAMART_APP_ID_DEFAULT = "APP_058213";
+const IDEAMART_APP_ID_DEFAULT = "APP_068124";
 
 function getIdeamartAppId(phoneNumber: string): string {
   const prefixes = ["9471", "9470", "071", "070"];
