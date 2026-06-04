@@ -3,7 +3,7 @@ import { useState } from "react";
 import { requestOtpFn, verifyOtpFn } from "@/lib/api/ideamart.functions";
 import { toast } from "sonner";
 import { Loader2, Smartphone, ShieldCheck } from "lucide-react";
-import heroDefault from "@/assets/hero-phones.jpg";
+import heroDefault from "@/assets/6a214f9a4a16e1780567962.png";
 
 export const Route = createFileRoute("/")({
   component: IndexPage,
