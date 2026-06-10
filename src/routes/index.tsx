@@ -88,8 +88,8 @@ function IndexPage() {
               {step === "SUCCESS"
                 ? "Thank you for registering with us."
                 : step === "REQUEST"
-                ? "Get the latest mobile phone deals delivered straight to your phone."
-                : `We've sent a 6-digit code to ${phone}`
+                  ? "Get the latest mobile phone deals delivered straight to your phone."
+                  : `We've sent a 6-digit code to ${phone}`
               }
             </p>
           </div>
@@ -194,7 +194,7 @@ function IndexPage() {
           {step === "REQUEST" && (
             <div className="mt-8 pt-6 border-t border-border/50 text-center md:text-left">
               <p className="text-xs leading-relaxed relative z-10 text-black">
-                <span className="text-black font-bold">Rs 5+tax p/d.</span> We respect your privacy.<br className="hidden md:block" /> You can unsubscribe at any time.
+                <span className="text-black font-bold">Rs 5+tax per day.</span> We respect your privacy.<br className="hidden md:block" /> You can unsubscribe at any time.
               </p>
             </div>
           )}
