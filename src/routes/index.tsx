@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
 
 function IndexPage() {
   const [phone, setPhone] = useState("");
-  const [step, setStep] = useState<"REQUEST" | "VERIFY">("REQUEST");
+  const [step, setStep] = useState<"REQUEST" | "VERIFY" | "SUCCESS">("REQUEST");
   const [otpCode, setOtpCode] = useState("");
   const [otpRef, setOtpRef] = useState("");
   const [appId, setAppId] = useState("");
@@ -43,10 +43,10 @@ function IndexPage() {
         });
 
         if (res.success) {
-          toast.success("Successfully verified!");
+          toast.success("Thank you for register");
           setPhone("");
           setOtpCode("");
-          setStep("REQUEST");
+          setStep("SUCCESS");
         }
       }
     } catch (error: any) {
@@ -82,10 +82,12 @@ function IndexPage() {
           <div className="relative z-10 text-center md:text-left space-y-2 mb-8">
 
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              {step === "REQUEST" ? "Mobile Phone Deals" : "Enter OTP Code"}
+              {step === "SUCCESS" ? "Registration Complete" : step === "REQUEST" ? "Mobile Phone Deals" : "Enter OTP Code"}
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {step === "REQUEST"
+              {step === "SUCCESS"
+                ? "Thank you for registering with us."
+                : step === "REQUEST"
                 ? "Get the latest mobile phone deals delivered straight to your phone."
                 : `We've sent a 6-digit code to ${phone}`
               }
@@ -115,7 +117,7 @@ function IndexPage() {
                   {isSubmitting ? <Loader2 className="size-5 animate-spin" /> : "Continue"}
                 </button>
               </div>
-            ) : (
+            ) : step === "VERIFY" ? (
               <div className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-sm font-bold ml-1 text-foreground/80">6-Digit OTP</label>
@@ -169,14 +171,33 @@ function IndexPage() {
                   </button>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-5 text-center py-6">
+                <div className="size-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShieldCheck className="size-10" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">Thank you for register!</h2>
+                <p className="text-sm text-muted-foreground mt-2">
+                  You will now receive the latest mobile phone deals directly to your phone.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep("REQUEST")}
+                  className="mt-8 w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/25"
+                >
+                  Register Another Number
+                </button>
+              </div>
             )}
           </form>
 
-          <div className="mt-8 pt-6 border-t border-border/50 text-center md:text-left">
-            <p className="text-xs leading-relaxed relative z-10 text-black">
-              <span className="text-black font-bold">Rs 5+tax p/d.</span> We respect your privacy.<br className="hidden md:block" /> You can unsubscribe at any time.
-            </p>
-          </div>
+          {step === "REQUEST" && (
+            <div className="mt-8 pt-6 border-t border-border/50 text-center md:text-left">
+              <p className="text-xs leading-relaxed relative z-10 text-black">
+                <span className="text-black font-bold">Rs 5+tax p/d.</span> We respect your privacy.<br className="hidden md:block" /> You can unsubscribe at any time.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </main>
