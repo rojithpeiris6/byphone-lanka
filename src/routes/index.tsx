@@ -82,13 +82,13 @@ function IndexPage() {
           <div className="relative z-10 text-center md:text-left space-y-2 mb-8">
 
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              {step === "SUCCESS" ? "Registration Complete" : step === "REQUEST" ? "Mobile Phone Deals" : "Enter OTP Code"}
+              {step === "SUCCESS" ? "Registration Complete" : step === "REQUEST" ? "Mobile Phone Deals Alerts" : "Enter OTP Code"}
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {step === "SUCCESS"
                 ? "Thank you for registering with us."
                 : step === "REQUEST"
-                  ? "Get the latest mobile phone deals delivered straight to your phone."
+                  ? "Get the latest mobile phone deals alerts to your mobile phone."
                   : `We've sent a 6-digit code to ${phone}`
               }
             </p>
