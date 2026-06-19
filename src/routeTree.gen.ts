@@ -18,6 +18,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrderSuccessRouteImport } from './routes/order-success'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DealsRouteImport } from './routes/deals'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -94,6 +95,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const OrderSuccessRoute = OrderSuccessRouteImport.update({
   id: '/order-success',
   path: '/order-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/deals': typeof DealsRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/order-success': typeof OrderSuccessRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -310,6 +317,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/deals': typeof DealsRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/order-success': typeof OrderSuccessRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -354,6 +362,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/deals': typeof DealsRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/order-success': typeof OrderSuccessRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -399,6 +408,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/deals'
     | '/login'
+    | '/notifications'
     | '/order-success'
     | '/privacy'
     | '/refund-policy'
@@ -441,6 +451,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/deals'
     | '/login'
+    | '/notifications'
     | '/order-success'
     | '/privacy'
     | '/refund-policy'
@@ -484,6 +495,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/deals'
     | '/login'
+    | '/notifications'
     | '/order-success'
     | '/privacy'
     | '/refund-policy'
@@ -528,6 +540,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DealsRoute: typeof DealsRoute
   LoginRoute: typeof LoginRoute
+  NotificationsRoute: typeof NotificationsRoute
   OrderSuccessRoute: typeof OrderSuccessRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
@@ -603,6 +616,13 @@ declare module '@tanstack/react-router' {
       path: '/order-success'
       fullPath: '/order-success'
       preLoaderRoute: typeof OrderSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -893,6 +913,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DealsRoute: DealsRoute,
   LoginRoute: LoginRoute,
+  NotificationsRoute: NotificationsRoute,
   OrderSuccessRoute: OrderSuccessRoute,
   PrivacyRoute: PrivacyRoute,
   RefundPolicyRoute: RefundPolicyRoute,

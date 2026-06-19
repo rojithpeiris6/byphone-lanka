@@ -164,7 +164,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const isPlainLayout = path.startsWith("/admin") || path === "/";
+  const isPlainLayout = path.startsWith("/admin") || path === "/notifications";
 
   const authModalOpen = useAuthModalStore((s) => s.isOpen);
   const authModalClose = useAuthModalStore((s) => s.close);
