@@ -186,7 +186,7 @@ export function Footer() {
   ];
   return (
     <footer className="mt-20 border-t border-border bg-muted/40">
-      <div className="mx-auto max-w-7xl px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto max-w-7xl px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <div className="text-xl font-extrabold text-primary">buyphone<span className="text-foreground">.lk</span></div>
           <p className="mt-3 text-sm text-muted-foreground max-w-xs">Sri Lanka's premium destination for smartphones, tablets and tech accessories.</p>

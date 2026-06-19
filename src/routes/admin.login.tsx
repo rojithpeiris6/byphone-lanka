@@ -66,8 +66,8 @@ function AdminLogin() {
           </p>
         </div>
         <div className="flex items-center gap-3 text-blue-200 text-sm">
-          <Lock className="size-4" />
-          <span>Secure admin access â€¢ 256-bit encryption</span>
+
+
         </div>
       </div>
 
@@ -152,7 +152,7 @@ function AdminLogin() {
             </form>
 
             <p className="text-center text-xs text-slate-400 mt-6">
-              Protected by Supabase Authentication
+
             </p>
           </div>
         </div>
