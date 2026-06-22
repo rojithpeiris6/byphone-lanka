@@ -174,7 +174,8 @@ function Home() {
       let query = supabase
         .from("products")
         .select(`*, brands(name), categories!products_category_id_fkey(name), product_images(url)`)
-        .eq("status", "active");
+        .eq("status", "active")
+        .eq("featured", true);
 
       if (idsToExclude.length > 0) {
         query = query.not("id", "in", `(${idsToExclude.join(',')})`);
@@ -245,7 +246,7 @@ function Home() {
         query = query.not("id", "in", `(${idsToExclude.join(',')})`);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(8);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(10);
       if (error) throw error;
       return (data ?? []).map((p: any) => ({
         ...p,
@@ -377,10 +378,10 @@ function Home() {
         </section>
       )}
 
-      {/* POPULAR PHONES */}
+      {/* FEATURED PRODUCTS */}
       <section className="mx-auto max-w-7xl px-4 mt-14">
         <div className="flex items-end justify-between mb-5">
-          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">POPULAR PHONES</h2>
+          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">FEATURED PRODUCTS</h2>
           <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">VIEW ALL <ChevronRight className="size-4" /></Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
@@ -401,9 +402,9 @@ function Home() {
             <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">NEW ARRIVALS</h2>
             <Link to="/shop" className="text-primary text-xs sm:text-sm font-bold inline-flex items-center gap-1">Browse All <ChevronRight className="size-4" /></Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
             {isNewArrivalsLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
+              Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="h-[340px] rounded-2xl bg-primary/10 animate-pulse" />
               ))
             ) : (
