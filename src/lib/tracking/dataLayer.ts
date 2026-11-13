@@ -2,27 +2,48 @@
 import type { TrackingPayload, VirtualPageViewPayload } from "./types";
 
 const SAFE_QUERY_KEYS = new Set([
-  "q", "query", "search", "page", "brand", "category", "sort",
-  "minprice", "maxprice", "min_price", "max_price",
-  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+  "q",
+  "query",
+  "search",
+  "page",
+  "brand",
+  "category",
+  "sort",
+  "minprice",
+  "maxprice",
+  "min_price",
+  "max_price",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
 ]);
 
 function containsPersonalText(value: string): boolean {
-  return /[^\s@]+@[^\s@]+\.[^\s@]+/.test(value) ||
-    /(?:\+?\d[\s().-]*){9,}/.test(value);
+  return /[^\s@]+@[^\s@]+\.[^\s@]+/.test(value) || /(?:\+?\d[\s().-]*){9,}/.test(value);
 }
 
 function isPrivateKey(key: string): boolean {
   const normalized = key.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
-  return /(^|_)(email|phone|telephone|mobile|password|address|street|token|secret|cvv)(_|$)/.test(normalized) ||
-    /(^|_)(customer_name|full_name|first_name|last_name|credit_card|card_number)(_|$)/.test(normalized) ||
-    normalized === "name";
+  return (
+    /(^|_)(email|phone|telephone|mobile|password|address|street|token|secret|cvv)(_|$)/.test(
+      normalized,
+    ) ||
+    /(^|_)(customer_name|full_name|first_name|last_name|credit_card|card_number)(_|$)/.test(
+      normalized,
+    ) ||
+    normalized === "name"
+  );
 }
 
 /** Keep only known public browsing parameters; never retain credentials or fragments. */
 export function sanitizeTrackedUrl(value: string): string | null {
   try {
-    const url = new URL(value, typeof window === "undefined" ? "https://buyphone.lk" : window.location.origin);
+    const url = new URL(
+      value,
+      typeof window === "undefined" ? "https://buyphone.lk" : window.location.origin,
+    );
     if (url.protocol !== "https:" && url.protocol !== "http:") return null;
     url.username = "";
     url.password = "";
@@ -47,7 +68,11 @@ function sanitizePayload(value: unknown, ancestors = new WeakSet<object>()): unk
     const clean: Record<string, unknown> = {};
     for (const [key, entry] of Object.entries(value)) {
       if (isPrivateKey(key)) continue;
-      if ((key === "search_term" || key === "page_title") && typeof entry === "string" && containsPersonalText(entry)) {
+      if (
+        (key === "search_term" || key === "page_title") &&
+        typeof entry === "string" &&
+        containsPersonalText(entry)
+      ) {
         clean[key] = "[redacted]";
       } else {
         clean[key] = sanitizePayload(entry, ancestors);

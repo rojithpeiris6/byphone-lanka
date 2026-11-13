@@ -1,3 +1,4 @@
+import { trackEcommerce, trackingItem } from "@/lib/tracking/ecommerce";
 import { Link } from "@tanstack/react-router";
 import { Heart, ShoppingCart, Bell, Loader2 } from "lucide-react";
 import type { Product } from "@/lib/shop";
@@ -69,7 +70,7 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
   };
 
   // Check if product has variants
-  const { data: variants } = useQuery({
+  const { data: variants, isLoading: loadingVariants, isError: variantsError } = useQuery({
     queryKey: ["product-variants-check", p.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -126,10 +127,12 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
+    if (loadingVariants || variantsError) { toast.info("Please wait for product configurations to load"); return; }
     if (variants && variants.length > 0) {
       setIsSelectorOpen(true);
     } else {
       add(p.id);
+      trackEcommerce("add_to_cart", [trackingItem(p)]);
       toast.success("Added to cart", { description: `${p.name} added to your cart` });
     }
   };
@@ -187,8 +190,9 @@ export function ProductCard({ p, showWishlist = true }: { p: Product; showWishli
         basePrice={p.price}
         isOpen={isSelectorOpen}
         onClose={() => setIsSelectorOpen(false)}
-        onAdd={(variantId, qty) => {
+        onAdd={(variantId, qty, variant) => {
           add(p.id, variantId, qty);
+          trackEcommerce("add_to_cart", [trackingItem(p, qty, p.price + variant.price_diff, variant)]);
           toast.success("Added to cart", { description: `${qty} items added to your cart` });
         }}
       />

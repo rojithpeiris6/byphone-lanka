@@ -1,3 +1,5 @@
+import { issueTrackingReceipt } from "@/lib/tracking/receipt.server";
+import { validateCoupon } from "@/lib/api/coupons.functions";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -14,11 +16,12 @@ const orderSchema = z.object({
     postalCode: z.string().optional(),
   }),
   shippingMethod: z.enum(["std", "exp"]),
-  paymentMethod: z.string(),
+  paymentMethod: z.enum(["cod", "card", "bank"]),
+  couponCode: z.string().max(100).optional(),
   paymentProvider: z.string().optional(),
   items: z.array(z.object({
-    productId: z.string(),
-    variantId: z.string().optional(),
+    productId: z.string().uuid(),
+    variantId: z.string().uuid().optional(),
     qty: z.number().int().positive(),
   })),
 });
@@ -65,7 +68,9 @@ export const placeOrder = createServerFn({ method: "POST" })
           .from("product_variants")
           .select("id, price_diff, stock_quantity")
           .eq("id", item.variantId)
+          .eq("product_id", item.productId)
           .single();
+        if (!variant) throw new Error("Invalid product configuration");
 
         if (variant) {
           unitPrice += variant.price_diff;
@@ -91,6 +96,20 @@ export const placeOrder = createServerFn({ method: "POST" })
         price: unitPrice,
         total: itemTotal,
       });
+    }
+
+    if (data.couponCode) {
+      const discount = await validateCoupon({ data: { code: data.couponCode, orderAmount: subtotal } });
+      const discountCents = Math.min(Math.round(subtotal * 100), Math.round(discount.discount * 100));
+      const originalSubtotal = subtotal;
+      let remaining = discountCents;
+      orderItemsToInsert.forEach((item, index) => {
+        const allocated = index === orderItemsToInsert.length - 1 ? remaining : Math.min(remaining, Math.round(discountCents * item.total / originalSubtotal));
+        remaining -= allocated;
+        item.total = (Math.round(item.total * 100) - allocated) / 100;
+        item.price = item.total / item.quantity;
+      });
+      subtotal = (Math.round(originalSubtotal * 100) - discountCents) / 100;
     }
 
     const shippingFee = shippingMethod === "exp" ? 490 : 0;
@@ -199,5 +218,6 @@ export const placeOrder = createServerFn({ method: "POST" })
       success: true,
       orderNumber: orderNumber,
       orderId: order.id,
+      trackingReceipt: issueTrackingReceipt(order.id),
     };
   });

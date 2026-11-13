@@ -80,6 +80,8 @@ export const verifyPaddlePayment = createServerFn({ method: "POST" })
       const paddle = await getPaddle();
       const transaction = await paddle.transactions.get(transactionId);
 
+      if (!transaction.customData || !("orderId" in transaction.customData) || transaction.customData.orderId !== orderId) throw new Error("Payment does not belong to this order");
+
       // Paddle Billing status for completed payments is typically "completed" or "paid"
       if (transaction.status === "completed" || transaction.status === "paid") {
         await supabaseAdmin.from("payment_records").insert({

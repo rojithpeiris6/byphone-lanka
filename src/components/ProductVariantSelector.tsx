@@ -9,13 +9,15 @@ import { Loader2, ShoppingCart, Check } from 'lucide-react';
 import { formatLKR } from '@/lib/shop';
 import { toast } from 'sonner';
 
+import type { Tables } from "@/integrations/supabase/types";
+
 type ProductVariantSelectorProps = {
   productId: string;
   productName: string;
   basePrice: number;
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (variantId: string, qty: number) => void;
+  onAdd: (variantId: string, qty: number, variant: Tables<"product_variants">) => void;
 };
 
 export function ProductVariantSelector({ productId, productName, basePrice, isOpen, onClose, onAdd }: ProductVariantSelectorProps) {
@@ -41,7 +43,9 @@ export function ProductVariantSelector({ productId, productName, basePrice, isOp
       toast.error("Please select a configuration");
       return;
     }
-    onAdd(selectedId, qty);
+    const variant = variants?.find(v => v.id === selectedId);
+    if (!variant || qty > variant.stock_quantity || qty < 1) { toast.error("Requested quantity is unavailable"); return; }
+    onAdd(selectedId, qty, variant);
     onClose();
   };
 
@@ -74,6 +78,7 @@ export function ProductVariantSelector({ productId, productName, basePrice, isOp
                   return (
                     <button
                       key={v.id}
+                      disabled={v.stock_quantity <= 0}
                       onClick={() => setSelectedId(v.id)}
                       className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
                         isSelected 

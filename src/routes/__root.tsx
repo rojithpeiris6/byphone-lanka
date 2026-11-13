@@ -19,6 +19,8 @@ import { AdminAuthProvider } from "@/lib/admin-auth";
 import { CustomerAuthProvider } from "@/lib/auth";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
+import { TrackingPreferences } from "@/components/TrackingPreferences";
+import { CONSENT_BOOTSTRAP } from "@/lib/tracking/consent";
 import { usePageTracking } from "@/lib/tracking";
 
 function NotFoundComponent() {
@@ -100,6 +102,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_BOOTSTRAP }} />
         <script dangerouslySetInnerHTML={{
           __html: `(function(w,d,s,l,i){if(w.__buyphoneGtmLoaded||(w.google_tags_first_party||[]).indexOf(i)!==-1)return;w.__buyphoneGtmLoaded=true;w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -156,6 +159,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       <body>
         <noscript dangerouslySetInnerHTML={{ __html: `<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5NC48789" height="0" width="0" style="display:none;visibility:hidden"></iframe>` }} />
         {children}
+        <TrackingPreferences />
         <Scripts />
       </body>
     </html>

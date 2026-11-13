@@ -1,5 +1,7 @@
+import { trackEcommerce, trackingItem } from "@/lib/tracking/ecommerce";
+import { CONSENT_EVENT } from "@/lib/tracking/consent";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Lock, ChevronRight, Truck, Zap, Banknote, CreditCard, Building2, ShieldCheck, RotateCcw, Headphones, Loader2, Ticket } from "lucide-react";
 import { useCart, formatLKR } from "@/lib/shop";
 import { toast } from "sonner";
@@ -35,7 +37,7 @@ function Checkout() {
   const { user } = useAuth();
 
   const [delivery, setDelivery] = useState<"std" | "exp">("std");
-  const [payment, setPayment] = useState("card");
+  const [payment, setPayment] = useState<"cod" | "card" | "bank">("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
@@ -44,6 +46,7 @@ function Checkout() {
   const [paddle, setPaddle] = useState<any>(null);
 
   useEffect(() => {
+    if (!import.meta.env.VITE_PADDLE_CLIENT_TOKEN) return;
     // Dynamically import to avoid SSR issues if any
     import("@paddle/paddle-js").then(({ initializePaddle }) => {
       initializePaddle({
@@ -138,6 +141,22 @@ function Checkout() {
     },
   });
 
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    const send = () => {
+      if (checkoutTracked.current || loadingProducts || !cartData || !items.length) return;
+      const trackedItems = items.map(item => {
+        const p = cartData.products.find(product => product.id === item.productId);
+        const v = item.variantId ? cartData.variants[item.variantId] : undefined;
+        if (!p || (item.variantId && !v)) return null;
+        return trackingItem(p, item.qty, Number(p.active_flash_sale?.sale_price ?? p.discount_price ?? p.price) + Number(v?.price_diff ?? 0), v);
+      });
+      if (trackedItems.every(item => item !== null)) checkoutTracked.current = trackEcommerce("begin_checkout", trackedItems);
+    };
+    send(); window.addEventListener(CONSENT_EVENT, send);
+    return () => window.removeEventListener(CONSENT_EVENT, send);
+  }, [items, cartData, loadingProducts]);
+
   const subtotal = useMemo(() => {
     if (!cartData?.products) return 0;
 
@@ -207,6 +226,7 @@ function Checkout() {
           },
           shippingMethod: delivery,
           paymentMethod: payment,
+          couponCode: activeCoupon ?? undefined,
           items: items.map(i => ({
             productId: i.productId,
             variantId: i.variantId,
@@ -214,6 +234,10 @@ function Checkout() {
           })),
         },
       });
+
+      try {
+        if (result.trackingReceipt) sessionStorage.setItem("buyphone:order-receipt:" + result.orderNumber, result.trackingReceipt);
+      } catch { /* Tracking cannot fail checkout. */ }
 
       if (payment === "card") {
         if (!paddle) {

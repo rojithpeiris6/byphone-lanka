@@ -20,6 +20,9 @@ export const validateCoupon = createServerFn({ method: "POST" })
 
     if (error || !coupon) throw new Error("Invalid or expired coupon code.");
 
+    const now = Date.now();
+    if ((coupon.start_date && new Date(coupon.start_date).getTime() > now) || (coupon.end_date && new Date(coupon.end_date).getTime() <= now)) throw new Error("Invalid or expired coupon code.");
+
     // Check min order amount
     if (orderAmount < coupon.min_order_amount) {
       throw new Error(`Minimum order amount for this coupon is Rs. ${coupon.min_order_amount.toLocaleString()}.`);
@@ -42,7 +45,7 @@ export const validateCoupon = createServerFn({ method: "POST" })
     }
 
     return {
-      discount,
+      discount: Math.max(0, Math.min(orderAmount, discount)),
       couponCode: coupon.code,
       discountType: coupon.discount_type,
       discountValue: coupon.discount_value,

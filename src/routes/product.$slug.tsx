@@ -1,5 +1,7 @@
+import { trackEcommerce, trackingItem } from "@/lib/tracking/ecommerce";
+import { CONSENT_EVENT } from "@/lib/tracking/consent";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Star, Heart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ShoppingCart, ChevronRight, Maximize2, Timer, MessageSquare, Send, Loader2, X, Share2, Facebook, Link as LinkIcon } from "lucide-react";
 import { products, formatLKR, useCart } from "@/lib/shop";
 import { ProductCard } from "@/components/ProductCard";
@@ -97,6 +99,14 @@ export const Route = createFileRoute("/product/$slug")({
 
 function ProductPage() {
   const { product: p, relatedProducts } = Route.useLoaderData() as { product: any, relatedProducts: any[] };
+  const trackedProduct = useRef<string | null>(null);
+  useEffect(() => {
+    const send = () => {
+      if (trackedProduct.current !== p.id && trackEcommerce("view_item", [trackingItem(p)])) trackedProduct.current = p.id;
+    };
+    send(); window.addEventListener(CONSENT_EVENT, send);
+    return () => window.removeEventListener(CONSENT_EVENT, send);
+  }, [p.id, p.name, p.price, p.brand, p.category]);
   const add = useCart((s) => s.add);
   const qc = useQueryClient();
   const [qty, setQty] = useState(1);
@@ -279,7 +289,9 @@ function ProductPage() {
       toast.error("Please select a configuration before adding to cart");
       return;
     }
+    if (qty < 1 || qty > Number(selectedVariant?.stock_quantity ?? p.stock_quantity)) { toast.error("Requested quantity is unavailable"); return; }
     add(p.id, selectedVariantId, qty);
+    trackEcommerce("add_to_cart", [trackingItem(p, qty, currentPrice, selectedVariant)]);
     toast.success("Added to cart", { description: `${qty} Ã— ${p.name}` });
   }
 

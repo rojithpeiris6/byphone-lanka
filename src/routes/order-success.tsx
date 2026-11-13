@@ -1,3 +1,6 @@
+import { confirmedPurchase } from "@/lib/api/purchases.functions";
+import { trackPurchaseOnce } from "@/lib/tracking/ecommerce";
+import { CONSENT_EVENT } from "@/lib/tracking/consent";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { CheckCircle2, ShoppingBag, ArrowRight, Package, Truck, Loader2 } from "lucide-react";
@@ -52,6 +55,22 @@ function OrderSuccessPage() {
       verifyPayment();
     }
   }, [_ptxn, orderNumber, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const send = async () => {
+      if (!orderNumber || verifying) return;
+      try {
+        const receipt = sessionStorage.getItem("buyphone:order-receipt:" + orderNumber);
+        if (!receipt) return;
+        const purchase = await confirmedPurchase({ data: { receipt } });
+        if (!cancelled && purchase) trackPurchaseOnce(purchase);
+      } catch { /* Tracking cannot change the order confirmation flow. */ }
+    };
+    void send(); const retry = () => { void send(); };
+    window.addEventListener(CONSENT_EVENT, retry);
+    return () => { cancelled = true; window.removeEventListener(CONSENT_EVENT, retry); };
+  }, [orderNumber, verifying]);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">

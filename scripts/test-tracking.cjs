@@ -11,7 +11,8 @@ function load(file, dependencies, globals = {}) {
   vm.runInNewContext(js, { exports, require: name => dependencies[name], URL, ...globals });
   return exports;
 }
-const window = { location: { origin: 'http://localhost:5173' }, dataLayer: [] };
+const listeners = new Map();
+const window = { addEventListener: (name,fn)=>listeners.set(name,fn), removeEventListener: (name)=>listeners.delete(name), location: { origin: 'http://localhost:5173' }, dataLayer: [] };
 const helper = load('src/lib/tracking/dataLayer.ts', {}, { window });
 assert.equal(helper.sanitizeTrackedUrl('/shop?q=iphone&email=test%40example.com&token=secret#secret'), 'http://localhost:5173/shop?q=iphone');
 assert.equal(helper.sanitizeTrackedUrl('/search?q=test%40example.com'), 'http://localhost:5173/search');
@@ -34,6 +35,7 @@ const document = { title: 'Home', head: {} };
 const hook = load('src/lib/tracking/usePageTracking.ts', {
   react: { useRef: () => ref, useEffect: fn => { effect = fn; } },
   '@tanstack/react-router': { useRouterState: ({ select }) => select(state) },
+  './consent': { getTrackingConsent: () => ({analytics:true,marketing:false}), CONSENT_EVENT: 'consent' },
   './dataLayer': { sanitizeTrackedUrl: helper.sanitizeTrackedUrl, trackVirtualPageView: event => sent.push(event) },
 }, {
   window, document,

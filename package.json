@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:tracking": "node scripts/test-tracking.cjs"
+    "test:tracking": "node scripts/test-tracking.cjs && node scripts/test-ecommerce.cjs && node scripts/test-admin.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

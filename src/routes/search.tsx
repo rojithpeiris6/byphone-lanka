@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react";
+import { trackSearch } from "@/lib/tracking/ecommerce";
+import { CONSENT_EVENT, getTrackingConsent } from "@/lib/tracking/consent";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -29,6 +32,16 @@ function SearchPage() {
       return result;
     },
   });
+
+  const trackedSearch = useRef<string | null>(null);
+  useEffect(() => {
+    const send = () => {
+      const consent = getTrackingConsent();
+      if (!isLoading && products && trackedSearch.current !== q && (consent.analytics || consent.marketing)) { trackSearch(q); trackedSearch.current = q; }
+    };
+    send(); window.addEventListener(CONSENT_EVENT, send);
+    return () => window.removeEventListener(CONSENT_EVENT, send);
+  }, [q, products, isLoading]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">

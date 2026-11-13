@@ -1,8 +1,10 @@
+import { requireAdmin } from "./admin-middleware";
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 
 export const getReportSummary = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .handler(async () => {
     const [ordersRes, customersRes] = await Promise.all([
       supabaseAdmin.from("orders").select("total"),
@@ -27,6 +29,7 @@ export const getReportSummary = createServerFn({ method: "POST" })
   });
 
 export const getRevenueTrend = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .handler(async () => {
     const { data, error } = await supabaseAdmin
       .from("orders")
@@ -48,6 +51,7 @@ export const getRevenueTrend = createServerFn({ method: "POST" })
   });
 
 export const getCategorySales = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .handler(async () => {
     const { data, error } = await supabaseAdmin
       .from("order_items")
@@ -70,6 +74,7 @@ export const getCategorySales = createServerFn({ method: "POST" })
   });
 
 export const getTopProducts = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .handler(async () => {
     const { data, error } = await supabaseAdmin
       .from("order_items")
@@ -93,6 +98,7 @@ export const getTopProducts = createServerFn({ method: "POST" })
   });
 
 export const getInventoryStats = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .handler(async () => {
     const { data, error } = await supabaseAdmin
       .from("products")

@@ -1,8 +1,10 @@
+import { requireAdmin } from "./admin-middleware";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const getSettings = createServerFn({ method: "GET" })
+  .middleware([requireAdmin])
   .handler(async () => {
     const { data, error } = await supabaseAdmin
       .from("settings")
@@ -20,6 +22,7 @@ export const getSettings = createServerFn({ method: "GET" })
   });
 
 export const updateSetting = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .inputValidator(z.object({
     key: z.string(),
     value: z.any()

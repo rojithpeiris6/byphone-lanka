@@ -19,6 +19,8 @@ import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrderSuccessRouteImport } from './routes/order-success'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as MetaCatalogDotxmlRouteImport } from './routes/meta-catalog[.]xml'
+import { Route as MetaCatalogDotcsvRouteImport } from './routes/meta-catalog[.]csv'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DealsRouteImport } from './routes/deals'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -100,6 +102,16 @@ const OrderSuccessRoute = OrderSuccessRouteImport.update({
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetaCatalogDotxmlRoute = MetaCatalogDotxmlRouteImport.update({
+  id: '/meta-catalog.xml',
+  path: '/meta-catalog.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetaCatalogDotcsvRoute = MetaCatalogDotcsvRouteImport.update({
+  id: '/meta-catalog.csv',
+  path: '/meta-catalog.csv',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -274,6 +286,8 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/deals': typeof DealsRoute
   '/login': typeof LoginRoute
+  '/meta-catalog.csv': typeof MetaCatalogDotcsvRoute
+  '/meta-catalog.xml': typeof MetaCatalogDotxmlRoute
   '/notifications': typeof NotificationsRoute
   '/order-success': typeof OrderSuccessRoute
   '/privacy': typeof PrivacyRoute
@@ -317,6 +331,8 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/deals': typeof DealsRoute
   '/login': typeof LoginRoute
+  '/meta-catalog.csv': typeof MetaCatalogDotcsvRoute
+  '/meta-catalog.xml': typeof MetaCatalogDotxmlRoute
   '/notifications': typeof NotificationsRoute
   '/order-success': typeof OrderSuccessRoute
   '/privacy': typeof PrivacyRoute
@@ -362,6 +378,8 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/deals': typeof DealsRoute
   '/login': typeof LoginRoute
+  '/meta-catalog.csv': typeof MetaCatalogDotcsvRoute
+  '/meta-catalog.xml': typeof MetaCatalogDotxmlRoute
   '/notifications': typeof NotificationsRoute
   '/order-success': typeof OrderSuccessRoute
   '/privacy': typeof PrivacyRoute
@@ -408,6 +426,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/deals'
     | '/login'
+    | '/meta-catalog.csv'
+    | '/meta-catalog.xml'
     | '/notifications'
     | '/order-success'
     | '/privacy'
@@ -451,6 +471,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/deals'
     | '/login'
+    | '/meta-catalog.csv'
+    | '/meta-catalog.xml'
     | '/notifications'
     | '/order-success'
     | '/privacy'
@@ -495,6 +517,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/deals'
     | '/login'
+    | '/meta-catalog.csv'
+    | '/meta-catalog.xml'
     | '/notifications'
     | '/order-success'
     | '/privacy'
@@ -540,6 +564,8 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DealsRoute: typeof DealsRoute
   LoginRoute: typeof LoginRoute
+  MetaCatalogDotcsvRoute: typeof MetaCatalogDotcsvRoute
+  MetaCatalogDotxmlRoute: typeof MetaCatalogDotxmlRoute
   NotificationsRoute: typeof NotificationsRoute
   OrderSuccessRoute: typeof OrderSuccessRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -623,6 +649,20 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meta-catalog.xml': {
+      id: '/meta-catalog.xml'
+      path: '/meta-catalog.xml'
+      fullPath: '/meta-catalog.xml'
+      preLoaderRoute: typeof MetaCatalogDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meta-catalog.csv': {
+      id: '/meta-catalog.csv'
+      path: '/meta-catalog.csv'
+      fullPath: '/meta-catalog.csv'
+      preLoaderRoute: typeof MetaCatalogDotcsvRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -913,6 +953,8 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DealsRoute: DealsRoute,
   LoginRoute: LoginRoute,
+  MetaCatalogDotcsvRoute: MetaCatalogDotcsvRoute,
+  MetaCatalogDotxmlRoute: MetaCatalogDotxmlRoute,
   NotificationsRoute: NotificationsRoute,
   OrderSuccessRoute: OrderSuccessRoute,
   PrivacyRoute: PrivacyRoute,
