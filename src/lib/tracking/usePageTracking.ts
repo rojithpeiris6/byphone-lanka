@@ -1,59 +1,55 @@
-/**
- * TanStack Router Page View Tracking Hook for Buyphone.lk
- * Synchronizes client-side navigation with GTM dataLayer.
- *
- * Rules:
- * - Excludes admin routes (/admin/*).
- * - Fires on initial page load and on SPA transitions.
- * - Captures query string changes when representing distinct views (e.g. search, filters).
- * - Prevents duplicates from StrictMode, hydration, and re-renders.
- */
-
 import { useEffect, useRef } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { trackVirtualPageView } from "./dataLayer";
+import { sanitizeTrackedUrl, trackVirtualPageView } from "./dataLayer";
 
+/** Track committed public routes after HeadContent has applied the destination title. */
 export function usePageTracking(): void {
-  const location = useRouterState({ select: (s) => s.location });
+  const state = useRouterState({
+    select: (s) => ({
+      href: s.location.href,
+      pathname: s.location.pathname,
+      ready: s.status === "idle" && !s.isLoading,
+      // Match HeadContent's deepest/last title precedence in the installed router.
+      title: s.matches.flatMap((match) => match.meta ?? []).filter((meta) => meta?.title).at(-1)?.title,
+    }),
+  });
   const lastTrackedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const pathname = location.pathname;
-
-    // Exclude all admin panel routes
-    if (pathname.startsWith("/admin")) {
+    if (typeof window === "undefined") return;
+    if (state.pathname === "/admin" || state.pathname.startsWith("/admin/")) {
       lastTrackedKeyRef.current = null;
       return;
     }
+    if (!state.ready) return;
+    const location = sanitizeTrackedUrl(state.href);
+    if (!location || lastTrackedKeyRef.current === location) return;
 
-    const currentKey = location.href;
-
-    // Prevent duplicate firing on identical path + search re-renders
-    if (lastTrackedKeyRef.current === currentKey) {
-      return;
-    }
-
-    // Schedule microtask/timeout to allow TanStack Router <HeadContent />
-    // to apply the route's document.title before reading it.
-    const timeoutId = window.setTimeout(() => {
-      lastTrackedKeyRef.current = currentKey;
-
-      const pageLocation = window.location.origin + location.href;
-      const pageTitle = document.title || "buyphone.lk";
-
+    let cancelled = false;
+    let frame = 0;
+    const sendWhenReady = () => {
+      if (cancelled) return;
+      // A route change or title update cancels/replaces this effect.
+      if (state.title && document.title !== state.title) return;
+      if (lastTrackedKeyRef.current === location) return;
+      lastTrackedKeyRef.current = location;
       trackVirtualPageView({
-        page_path: pathname,
-        page_location: pageLocation,
-        page_title: pageTitle,
+        page_path: state.pathname,
+        page_location: location,
+        page_title: document.title || "buyphone.lk",
       });
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
+      observer.disconnect();
     };
-  }, [location.pathname, location.href]);
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(sendWhenReady);
+    });
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    frame = requestAnimationFrame(sendWhenReady);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [state.href, state.pathname, state.ready, state.title]);
 }

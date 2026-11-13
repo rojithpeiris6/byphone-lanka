@@ -1,87 +1,89 @@
-/**
- * Buyphone.lk Centralized DataLayer Utility
- * Handles window.dataLayer.push() with safety checks, PII redaction, and typing.
- */
+/** Shared browser tracking boundary. Tracking must never break the storefront. */
+import type { TrackingPayload, VirtualPageViewPayload } from "./types";
 
-import type {
-  TrackingPayload,
-  VirtualPageViewPayload,
-} from "./types";
-
-const FORBIDDEN_PII_KEYS = new Set([
-  "email",
-  "phone",
-  "telephone",
-  "mobile",
-  "password",
-  "address",
-  "street",
-  "customer_name",
-  "full_name",
-  "first_name",
-  "last_name",
-  "credit_card",
-  "card_number",
-  "cvv",
+const SAFE_QUERY_KEYS = new Set([
+  "q", "query", "search", "page", "brand", "category", "sort",
+  "minprice", "maxprice", "min_price", "max_price",
+  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
 ]);
 
-/**
- * Strips accidental Personally Identifiable Information (PII) before dispatching to GTM dataLayer.
- */
-function sanitizePayload<T extends Record<string, unknown>>(data: T): T {
-  const sanitized: Record<string, unknown> = {};
+function containsPersonalText(value: string): boolean {
+  return /[^\s@]+@[^\s@]+\.[^\s@]+/.test(value) ||
+    /(?:\+?\d[\s().-]*){9,}/.test(value);
+}
 
-  for (const [key, val] of Object.entries(data)) {
-    if (FORBIDDEN_PII_KEYS.has(key.toLowerCase())) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(`[Tracking] Stripped prohibited PII key from dataLayer push: "${key}"`);
+function isPrivateKey(key: string): boolean {
+  const normalized = key.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+  return /(^|_)(email|phone|telephone|mobile|password|address|street|token|secret|cvv)(_|$)/.test(normalized) ||
+    /(^|_)(customer_name|full_name|first_name|last_name|credit_card|card_number)(_|$)/.test(normalized) ||
+    normalized === "name";
+}
+
+/** Keep only known public browsing parameters; never retain credentials or fragments. */
+export function sanitizeTrackedUrl(value: string): string | null {
+  try {
+    const url = new URL(value, typeof window === "undefined" ? "https://buyphone.lk" : window.location.origin);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    url.username = "";
+    url.password = "";
+    url.hash = "";
+    for (const [key, entry] of Array.from(url.searchParams.entries())) {
+      if (!SAFE_QUERY_KEYS.has(key.toLowerCase()) || containsPersonalText(entry)) {
+        url.searchParams.delete(key);
       }
-      continue;
     }
-
-    if (val && typeof val === "object" && !Array.isArray(val)) {
-      sanitized[key] = sanitizePayload(val as Record<string, unknown>);
-    } else if (Array.isArray(val)) {
-      sanitized[key] = val.map((item) =>
-        item && typeof item === "object" ? sanitizePayload(item as Record<string, unknown>) : item
-      );
-    } else {
-      sanitized[key] = val;
-    }
+    return url.href;
+  } catch {
+    return null;
   }
-
-  return sanitized as T;
 }
 
-/**
- * Push an event object directly to the GTM dataLayer.
- * Safe for SSR (no-op on server).
- */
+function sanitizePayload(value: unknown, ancestors = new WeakSet<object>()): unknown {
+  if (value === null || typeof value !== "object") return value;
+  if (ancestors.has(value)) return undefined;
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) return value.map((entry) => sanitizePayload(entry, ancestors));
+    const clean: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value)) {
+      if (isPrivateKey(key)) continue;
+      if ((key === "search_term" || key === "page_title") && typeof entry === "string" && containsPersonalText(entry)) {
+        clean[key] = "[redacted]";
+      } else {
+        clean[key] = sanitizePayload(entry, ancestors);
+      }
+    }
+    return clean;
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+/** SSR-safe and fail-open: a malformed event must not crash a page or checkout. */
 export function pushDataLayer(payload: TrackingPayload): void {
-  if (typeof window === "undefined") {
-    return;
+  if (typeof window === "undefined") return;
+  try {
+    window.dataLayer = window.dataLayer || [];
+    const clean = sanitizePayload(payload) as Record<string, unknown>;
+    window.dataLayer.push(clean);
+  } catch {
+    // Do not log potentially private event payloads or interrupt the user action.
   }
-
-  window.dataLayer = window.dataLayer || [];
-  const cleanPayload = sanitizePayload(payload);
-  window.dataLayer.push(cleanPayload);
 }
 
-/**
- * Tracks a virtual page view for SPA route transitions.
- */
 export function trackVirtualPageView(params: {
   page_path: string;
   page_location: string;
   page_title: string;
 }): void {
+  const location = sanitizeTrackedUrl(params.page_location);
+  if (!location) return;
+  const url = new URL(location);
   const payload: VirtualPageViewPayload = {
     event: "virtual_page_view",
-    page_path: params.page_path,
-    page_location: params.page_location,
+    page_path: url.pathname,
+    page_location: location,
     page_title: params.page_title,
   };
-
   pushDataLayer(payload);
 }
-
