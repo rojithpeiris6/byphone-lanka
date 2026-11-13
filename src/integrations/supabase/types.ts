@@ -312,6 +312,9 @@ export type Database = {
       }
       coupons: {
         Row: {
+          description: string | null
+          start_date: string | null
+          end_date: string | null
           id: string
           code: string
           status: string
@@ -325,6 +328,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          description?: string | null
+          start_date?: string | null
+          end_date?: string | null
           id?: string
           code: string
           status?: string
@@ -338,6 +344,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          description?: string | null
+          start_date?: string | null
+          end_date?: string | null
           id?: string
           code?: string
           status?: string
@@ -351,6 +360,78 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      inventory_logs: {
+        Row: {
+          id: string
+          product_id: string
+          type: "in" | "out" | "set"
+          quantity: number
+          previous_stock: number
+          new_stock: number
+          note: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          type: "in" | "out" | "set"
+          quantity: number
+          previous_stock: number
+          new_stock: number
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          type?: "in" | "out" | "set"
+          quantity?: number
+          previous_stock?: number
+          new_stock?: number
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [{ foreignKeyName: "inventory_logs_product_id_fkey"; columns: ["product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["id"] }]
+      }
+      product_reviews: {
+        Row: {
+          id: string
+          product_id: string
+          user_id: string | null
+          customer_name: string
+          rating: number
+          comment: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          user_id?: string | null
+          customer_name: string
+          rating: number
+          comment: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          user_id?: string | null
+          customer_name?: string
+          rating?: number
+          comment?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "product_reviews_product_id_fkey"; columns: ["product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["id"] }]
       }
       flash_sales: {
         Row: {

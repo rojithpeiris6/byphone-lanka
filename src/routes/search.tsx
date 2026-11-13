@@ -9,10 +9,11 @@ export const Route = createFileRoute("/search")({
   validateSearch: z.object({
     q: z.string().min(1),
   }),
-  head: ({ search }) => ({
+  loaderDeps: ({ search }) => ({ q: search.q }),
+  head: ({ match }) => ({
     meta: [
-      { title: `Search results for "${search.q}" | buyphone.lk` },
-      { name: "description", content: `Browse results for ${search.q} at buyphone.lk` },
+      { title: `Search results for "${match.loaderDeps.q}" | buyphone.lk` },
+      { name: "description", content: `Browse results for ${match.loaderDeps.q} at buyphone.lk` },
     ],
   }),
   component: SearchPage,

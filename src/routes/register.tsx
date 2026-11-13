@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { Mail, Lock, User, Phone, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
