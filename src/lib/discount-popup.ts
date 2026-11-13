@@ -1,4 +1,5 @@
 export type GiftDesign = "light" | "dark";
+export const GIFT_POPUP_OPEN_EVENT = "buyphone:open-sms-offers";
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 const DESIGN = "buyphone:discount-gift:design:v1";
 const DISMISSED = "buyphone:discount-gift:dismissed:v1";

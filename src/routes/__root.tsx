@@ -20,7 +20,6 @@ import { AdminAuthProvider } from "@/lib/admin-auth";
 import { CustomerAuthProvider } from "@/lib/auth";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
-import { TrackingPreferences } from "@/components/TrackingPreferences";
 import { CONSENT_BOOTSTRAP } from "@/lib/tracking/consent";
 import { usePageTracking } from "@/lib/tracking";
 
@@ -211,7 +210,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           }}
         />
         {children}
-        <TrackingPreferences />
         <Scripts />
       </body>
     </html>
