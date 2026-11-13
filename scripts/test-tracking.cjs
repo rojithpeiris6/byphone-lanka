@@ -69,6 +69,8 @@ for (const gateway of [false,true]) {
   const ctx=vm.createContext({window:win,document:doc});
   vm.runInContext(loader,ctx); vm.runInContext(loader,ctx);
   assert.equal(inserted,gateway?0:1);
-  assert.equal(win.dataLayer?.length??0,gateway?0:1);
+  assert.equal(win.dataLayer.length,1);
+  assert.equal(win.dataLayer[0].event,'gtm.js');
+  assert.equal(typeof win.dataLayer[0]['gtm.start'],'number');
 }
-console.log('PASS: GTM loads once locally and skips the original loader when Cloudflare gateway owns the container.');
+console.log('PASS: GTM startup is queued once with or without Cloudflare; the gateway prevents duplicate script loading.');
