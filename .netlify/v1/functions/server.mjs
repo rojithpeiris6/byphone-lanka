@@ -8,7 +8,7 @@ export default serverEntrypoint.fetch;
 
 export const config = {
 name: "@netlify/vite-plugin server handler",
-generator: "@netlify/vite-plugin@2.12.7",
+generator: "@netlify/vite-plugin@3.0.1",
 path: "/*",
 preferStatic: true,
 };
