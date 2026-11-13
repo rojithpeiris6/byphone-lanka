@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRouterState } from "@tanstack/react-router";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, LockKeyhole, X } from "lucide-react";
 import { requestOtpFn, verifyOtpFn } from "@/lib/api/ideamart.functions";
-import { getTrackingConsent, savedTrackingConsent } from "@/lib/tracking/consent";
+import { getTrackingConsent } from "@/lib/tracking/consent";
 import { pushDataLayer } from "@/lib/tracking/dataLayer";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 import {
@@ -13,6 +13,7 @@ import {
   dismissGiftPopup,
   normalizeGiftPhone,
   giftStorage,
+  GIFT_POPUP_OPEN_EVENT,
   type GiftDesign,
 } from "@/lib/discount-popup";
 import "./DiscountGiftPopup.css";
@@ -41,7 +42,6 @@ export function DiscountGiftPopup() {
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [remaining, setRemaining] = useState(300);
@@ -76,16 +76,15 @@ export function DiscountGiftPopup() {
       ? new URLSearchParams(location.search).get("gift_preview")
       : null;
     const forced = preview === "light" || preview === "dark" ? preview : null;
-    const show = () => {
-      if (cancelled || active.current || (!forced && popupDismissed(giftStorage()))) return;
+    const show = (manual = false) => {
+      if (cancelled || active.current || (!manual && !forced && popupDismissed(giftStorage()))) return;
       if (
         !forced &&
-        (!savedTrackingConsent() ||
-          document.visibilityState !== "visible" ||
+        (document.visibilityState !== "visible" ||
           useAuthModalStore.getState().isOpen ||
           document.querySelector('[role="dialog"][data-state="open"]'))
       ) {
-        timeout = setTimeout(show, 3000);
+        timeout = setTimeout(() => show(manual), 3000);
         return;
       }
       active.current = true;
@@ -94,7 +93,6 @@ export function DiscountGiftPopup() {
       setStep("phone");
       setPhone("");
       setOtp("");
-      setAgreed(false);
       setError("");
       receipt.current = null;
       shownAt.current = Date.now();
@@ -123,15 +121,18 @@ export function DiscountGiftPopup() {
       )
         show();
     };
+    const reopen = () => show(true);
     if (forced) timeout = setTimeout(show, 300);
     else resume();
     document.addEventListener("visibilitychange", resume);
     document.addEventListener("mouseout", exit);
+    window.addEventListener(GIFT_POPUP_OPEN_EVENT, reopen);
     return () => {
       cancelled = true;
       clearTimeout(timeout);
       document.removeEventListener("visibilitychange", resume);
       document.removeEventListener("mouseout", exit);
+      window.removeEventListener(GIFT_POPUP_OPEN_EVENT, reopen);
     };
   }, [path, dismiss]);
 
@@ -157,10 +158,6 @@ export function DiscountGiftPopup() {
     const subscriberId = normalizeGiftPhone(phone);
     if (step === "phone" && !subscriberId) {
       setError("Enter a valid Sri Lankan mobile number.");
-      return;
-    }
-    if (!agreed) {
-      setError("Please confirm the paid SMS subscription price before continuing.");
       return;
     }
     if (step === "otp" && !/^\d{4,6}$/.test(otp)) {
@@ -262,17 +259,16 @@ export function DiscountGiftPopup() {
             ) : (
               <>
                 <div className="bp-promo-offer">
-                  <span>A LITTLE GIFT FOR YOU</span>
-                  <p>
-                    Unlock <small>up to</small> <strong>50% OFF</strong>
-                  </p>
+                  <span>EXCLUSIVE MOBILE OFFER</span>
                 </div>
                 <Dialog.Title className="bp-promo-title" ref={title} tabIndex={-1}>
-                  {step === "phone" ? "Enter your mobile number" : "Enter your OTP"}
+                  {step === "phone" ? (
+                    <><span>Unlock up to</span><strong>50% OFF</strong></>
+                  ) : "Enter your OTP"}
                 </Dialog.Title>
                 <Dialog.Description className="bp-promo-description">
                   {step === "phone"
-                    ? "Join our paid SMS offers service for exclusive discount codes."
+                    ? "Request a verification code to join our paid SMS offers service. Discounts depend on the selected product and available offers."
                     : "Enter the code sent to your phone. Verification activates the paid SMS subscription."}
                 </Dialog.Description>
                 <form onSubmit={submit} className="bp-promo-form">
@@ -300,29 +296,6 @@ export function DiscountGiftPopup() {
                       aria-describedby="bp-promo-error bp-promo-fee"
                     />
                   </div>
-                  {step === "phone" ? (
-                    <label className="bp-promo-agreement">
-                      <input
-                        type="checkbox"
-                        checked={agreed}
-                        onChange={(event) => setAgreed(event.target.checked)}
-                        disabled={busy}
-                      />
-                      <span>
-                        I agree to the paid SMS subscription at <strong>{PRICE}</strong>.
-                      </span>
-                    </label>
-                  ) : (
-                    <p id="bp-promo-fee" className="bp-promo-price">
-                      Paid SMS subscription: <strong>{PRICE}</strong>.
-                    </p>
-                  )}
-                  {step === "phone" && (
-                    <span id="bp-promo-fee" className="sr-only">
-                      Paid SMS subscription costs Rs. 5 plus tax per day. An OTP is required to
-                      activate it.
-                    </span>
-                  )}
                   {error && (
                     <p id="bp-promo-error" role="alert" className="bp-promo-error">
                       {error}
@@ -333,7 +306,7 @@ export function DiscountGiftPopup() {
                     type="submit"
                     disabled={
                       busy ||
-                      (step === "phone" && (!agreed || !phone.trim())) ||
+                      (step === "phone" && !phone.trim()) ||
                       (step === "otp" && !otp.trim())
                     }
                   >
@@ -342,11 +315,18 @@ export function DiscountGiftPopup() {
                         <Loader2 size={18} className="animate-spin" /> Please wait…
                       </>
                     ) : step === "phone" ? (
-                      "Get my discount codes →"
+                      "Get code"
                     ) : (
                       "Verify & subscribe"
                     )}
                   </button>
+                  {step === "phone" && (
+                    <p className="bp-promo-verification"><LockKeyhole size={16} aria-hidden="true" /> Verification code sent by SMS</p>
+                  )}
+                  <p id="bp-promo-fee" className="bp-promo-price">
+                    Paid SMS service: {PRICE}. Renews daily.
+                    {step === "phone" && " Activate after OTP verification."}
+                  </p>
                   {step === "otp" && (
                     <button
                       type="button"

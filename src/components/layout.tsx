@@ -4,6 +4,7 @@ import { Search, User, ShoppingCart, Truck, ShieldCheck, RotateCcw, Home, Layout
 import { useCart } from "@/lib/shop";
 import { useAuth } from "@/lib/auth";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
+import { GIFT_POPUP_OPEN_EVENT } from "@/lib/discount-popup";
 
 export function AnnounceBar() {
   return (
@@ -190,6 +191,9 @@ export function Footer() {
         <div>
           <div className="text-xl font-extrabold text-primary">buyphone<span className="text-foreground">.lk</span></div>
           <p className="mt-3 text-sm text-muted-foreground max-w-xs">Sri Lanka's premium destination for smartphones, tablets and tech accessories.</p>
+          <button type="button" className="mt-4 min-h-11 text-sm font-semibold text-primary underline underline-offset-4" onClick={() => window.dispatchEvent(new Event(GIFT_POPUP_OPEN_EVENT))}>
+            SMS offers
+          </button>
         </div>
         {cols.map((c) => (
           <div key={c.title}>

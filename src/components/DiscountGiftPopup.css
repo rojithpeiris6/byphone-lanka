@@ -14,14 +14,14 @@
   --promo-soft: #edf5ff;
   position: fixed;
   z-index: 71;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(420px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-radius: 25px;
+  border-radius: 0;
   background: var(--promo-bg);
   color: var(--promo-text);
   box-shadow: 0 25px 90px #040b2d50;
@@ -33,12 +33,12 @@
   --promo-muted: #b7c4db;
   --promo-accent: #f0c777;
   --promo-soft: #192b4b;
-  border: 1px solid #cfaa5a99;
   background: radial-gradient(ellipse at 50% 15%, #233b64, #0d1830 60%);
 }
 .bp-promo-hero {
-  height: 156px;
-  background: var(--promo-soft);
+  flex: 0 0 auto;
+  height: 190px;
+  background: radial-gradient(ellipse at 50% 90%, #fff5c8 0, #edf5ff 48%, #f7faff 85%);
   position: relative;
   overflow: hidden;
 }
@@ -58,9 +58,9 @@
   color: var(--promo-accent);
 }
 .bp-promo-close {
-  position: absolute;
-  right: 12px;
-  top: 11px;
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  top: max(11px, env(safe-area-inset-top));
   z-index: 7;
   width: 44px;
   height: 44px;
@@ -75,7 +75,7 @@
   background: #abbfe240;
 }
 .bp-promo-close-delay {
-  position: absolute;
+  position: fixed;
   right: 17px;
   top: 25px;
   font-size: 10px;
@@ -85,7 +85,7 @@
 .bp-promo-gift {
   position: absolute;
   left: 50%;
-  top: 5px;
+  top: 22px;
   width: 180px;
   height: 150px;
   transform: translateX(-50%);
@@ -206,49 +206,54 @@
   background: #95b7fb;
 }
 .bp-promo-content {
-  padding: 17px 25px 21px;
+  flex: 1 0 auto;
+  width: min(100%, 600px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px 24px max(20px, env(safe-area-inset-bottom));
   text-align: center;
 }
 .bp-promo-offer > span {
-  display: block;
-  font-size: 9px;
+  display: inline-block;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: var(--promo-soft);
+  font-size: 11px;
   letter-spacing: 2px;
   font-weight: 800;
   color: var(--promo-accent);
-  margin-bottom: 5px;
-}
-.bp-promo-offer p {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  margin: 0 0 15px;
-  line-height: 1.25;
-}
-.bp-promo-offer small {
-  font-size: 14px;
-  font-weight: 500;
-}
-.bp-promo-offer strong {
-  font-size: 31px;
-  color: var(--promo-accent);
-  white-space: nowrap;
+  margin-bottom: 12px;
 }
 .bp-promo-title {
-  font-size: 25px;
+  font-size: clamp(27px, 4vw, 38px);
   font-weight: 800;
   letter-spacing: -0.8px;
   line-height: 1.15;
-  margin: 0 0 8px;
+  margin: 0 0 14px;
+}
+.bp-promo-title > span,
+.bp-promo-title > strong {
+  display: block;
+}
+.bp-promo-title > strong {
+  margin-top: 4px;
+  font-size: clamp(48px, 8vw, 78px);
+  font-style: italic;
+  letter-spacing: -2px;
+  color: var(--promo-accent);
+  line-height: 1.05;
 }
 .bp-promo-description {
   color: var(--promo-muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
   margin: 0 0 15px;
 }
 .bp-promo-form {
-  padding: 14px;
-  border-radius: 16px;
+  padding: 18px;
+  border-radius: 22px;
   background: var(--promo-soft);
   text-align: left;
 }
@@ -265,7 +270,7 @@
   border: 2px solid var(--promo-accent);
   border-radius: 11px;
   box-shadow: 0 0 0 3px #2563eb0c;
-  min-height: 55px;
+  min-height: 60px;
   overflow: hidden;
 }
 .bp-promo--dark .bp-promo-input-wrap {
@@ -293,30 +298,9 @@
 .bp-promo-input-wrap:focus-within {
   box-shadow: 0 0 0 4px #4880ed2b;
 }
-.bp-promo-agreement {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 12px 0 0;
-  color: var(--promo-muted);
-  font-size: 11px;
-  line-height: 1.5;
-  min-height: 36px;
-}
-.bp-promo-agreement input {
-  flex: 0 0 17px;
-  width: 17px;
-  height: 17px;
-  margin-top: 1px;
-  accent-color: #2563eb;
-}
-.bp-promo-agreement strong {
-  color: var(--promo-text);
-  white-space: nowrap;
-}
 .bp-promo-submit {
   width: 100%;
-  min-height: 51px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -325,10 +309,10 @@
   border-radius: 11px;
   background: #2563eb;
   color: #fff;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 750;
   padding: 12px 8px;
-  margin-top: 10px;
+  margin-top: 14px;
   box-shadow: 0 6px 14px #2563eb20;
 }
 .bp-promo--dark .bp-promo-submit {
@@ -363,10 +347,20 @@
   min-height: 40px;
 }
 .bp-promo-price {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
+  color: var(--promo-text);
+  margin: 10px 0 0;
+  text-align: center;
+}
+.bp-promo-verification {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
   color: var(--promo-muted);
-  margin: 10px 0;
+  margin-top: 12px;
 }
 .bp-promo-countdown {
   display: flex;
@@ -420,6 +414,9 @@
   outline: 3px solid #83aaff;
   outline-offset: 2px;
 }
+.bp-promo-title:focus {
+  outline: none;
+}
 @keyframes bp-promo-fade {
   from {
     opacity: 0;
@@ -431,11 +428,11 @@
 @keyframes bp-promo-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -48%);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translateY(0);
   }
 }
 @keyframes bp-promo-open {
@@ -529,14 +526,27 @@
   .bp-promo-form {
     padding: 12px;
   }
-  .bp-promo-offer strong {
-    font-size: 28px;
+}
+@media (min-width: 900px) and (min-height: 600px) {
+  .bp-promo-hero {
+    height: clamp(190px, 27dvh, 260px);
   }
-  .bp-promo-agreement {
-    font-size: 10px;
+  .bp-promo-gift {
+    top: 30px;
+    scale: 1.4;
+    transform-origin: 0 0;
+  }
+  .bp-promo-content {
+    width: min(100%, 640px);
+    padding: 12px 32px 24px;
+  }
+  .bp-promo-brand {
+    top: 30px;
+    left: 32px;
+    font-size: 23px;
   }
 }
-@media (max-height: 700px) {
+@media (max-width: 899px) and (max-height: 700px) {
   .bp-promo-hero {
     height: 125px;
   }
@@ -552,8 +562,14 @@
   .bp-promo-description {
     margin-bottom: 11px;
   }
-  .bp-promo-offer p {
-    margin-bottom: 11px;
+  .bp-promo-offer > span {
+    margin-bottom: 8px;
+  }
+  .bp-promo-title {
+    margin-bottom: 10px;
+  }
+  .bp-promo-title > strong {
+    font-size: 46px;
   }
   .bp-promo-countdown {
     margin-top: 10px;
