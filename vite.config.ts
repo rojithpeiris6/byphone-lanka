@@ -6,6 +6,11 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
+  server: {
+    watch: {
+      ignored: ["**/node_modules/**"],
+    },
+  },
   plugins: [
     tsconfigPaths(),
     tailwindcss(),
