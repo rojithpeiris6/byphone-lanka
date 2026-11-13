@@ -1,7 +1,9 @@
 # Ideamart Subscription 1
 
-Event: ideamart_subscription_1. Label: Ideamart Subscription 1. Fires only after the existing Notify Me OTP verification returns success, not on button click, phone submission, OTP request or failure. Privacy choices are respected. Phone number, OTP and reference number never enter the tracking payload.
+Three events: ideamart_phone_submitted (initial phone form submission), ideamart_otp_submitted (each verification attempt), and ideamart_subscription_1 (successful provider response with subscriptionStatus exactly REGISTERED). Attempts include API failures and legitimate retries. Resend OTP is not a new initial phone submission. GA4 event count measures attempts; total users measures consenting browser users, not distinct phone numbers.
 
-The current server verifies OTP through appzone.lk but does not independently check subscription/billing status or store a product-specific stock-alert subscription. Therefore verification_status is otp_verified; this event must not be described as independently confirmed paid subscription revenue. Confirm the provider contract and stock-alert delivery before treating it as a completed paid subscription.
+All stages respect existing tracking preferences and exclude phone, OTP, provider reference and subscriberId. Product UUID and fixed stage metadata only are sent. A synchronous submission lock blocks duplicate in-flight form submissions; success deduplicates the provider reference in memory.
 
-GTM-Ideamart-Subscription-1-draft.json contains a merge-ready paused GA4 tag and exact event trigger. This file has not been imported/published. Test with an authorized provider sandbox/number before enabling the tag; no real OTP or SMS subscription was requested during implementation.
+The appzone.lk proxy must forward subscriptionStatus from Ideamart. S1000 alone is OTP success and does not count as registration. Missing/pending/unregistered status does not fire registration success. Official contract: https://docs.ideamart.io/developer-docs/otp-api/ . No live OTP, paid subscription or SMS was requested during tests. Confirm the proxy response using an authorized test before enabling.
+
+GTM-Ideamart-Subscription-1-draft.json is merge-ready with all three GA4 tags paused; not imported or published. Import with Merge/overwrite matching names into the existing workspace, map funnel_step and item_id if needed, test, then approve activation. No Meta funnel tag was added.

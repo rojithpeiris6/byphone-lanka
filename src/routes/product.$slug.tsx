@@ -1,4 +1,4 @@
-import { trackIdeamartSubscription } from "@/lib/tracking/ideamart";
+import { trackIdeamartSubscription, trackIdeamartStage } from "@/lib/tracking/ideamart";
 import { trackEcommerce, trackingItem } from "@/lib/tracking/ecommerce";
 import { CONSENT_EVENT } from "@/lib/tracking/consent";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
@@ -145,6 +145,7 @@ function ProductPage() {
   const [otpRef, setOtpRef] = useState("");
   const [otpAppId, setOtpAppId] = useState("");
   const [isSubmittingNotify, setIsSubmittingNotify] = useState(false);
+  const notifySubmitLock = useRef(false);
 
   const { user } = useAuth();
 
@@ -337,12 +338,15 @@ function ProductPage() {
 
   async function handleNotifySubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (notifySubmitLock.current) return;
     if (otpStep === "REQUEST" && !notifyPhone.trim()) return;
     if (otpStep === "VERIFY" && !otpCode.trim()) return;
 
+    notifySubmitLock.current = true;
     setIsSubmittingNotify(true);
     try {
       if (otpStep === "REQUEST") {
+        trackIdeamartStage(p.id, "phone_submitted");
         const res = await requestOtpFn({ data: { subscriberId: notifyPhone } });
         if (res.success) {
           setOtpRef(res.referenceNo);
@@ -351,6 +355,7 @@ function ProductPage() {
           toast.success("OTP sent to your phone");
         }
       } else {
+        trackIdeamartStage(p.id, "otp_submitted");
         const res = await verifyOtpFn({
           data: {
             otp: otpCode,
@@ -362,7 +367,7 @@ function ProductPage() {
         });
 
         if (res.success) {
-          trackIdeamartSubscription(p.id, otpRef);
+          trackIdeamartSubscription(p.id, otpRef, res.registrationConfirmed);
           toast.success("Notification set!", { description: `We'll text ${notifyPhone} when it's back.` });
           setIsNotifyModalOpen(false);
           setNotifyPhone("");
@@ -373,6 +378,7 @@ function ProductPage() {
     } catch (error: any) {
       toast.error(error.message || "Failed to process request");
     } finally {
+      notifySubmitLock.current = false;
       setIsSubmittingNotify(false);
     }
   }

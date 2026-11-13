@@ -96,6 +96,7 @@ export const verifyOtpFn = createServerFn({ method: "POST" })
 
       return {
         success: true,
+        registrationConfirmed: result.subscriptionStatus === "REGISTERED",
         message: result.message,
       };
     } catch (error: any) {
