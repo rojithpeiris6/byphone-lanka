@@ -8,3 +8,5 @@ export * from "./usePageTracking";
 
 export * from "./ecommerce";
 export * from "./consent";
+
+export * from "./ideamart";

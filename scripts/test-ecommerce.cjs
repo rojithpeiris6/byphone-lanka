@@ -77,3 +77,15 @@ console.log('PASS: catalog/event UUID parity, active sale pricing, variant avail
   assert.equal(await api.confirmedPurchase({data:{receipt:'not-a-signed-receipt'}}),null);
   console.log('PASS: server purchase policy rejects cancelled/unpaid/inconsistent orders and accepts verified COD/paid fixtures. No database writes or real conversions.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+const subscription = load('src/lib/tracking/ideamart.ts', {'./dataLayer':{pushDataLayer:event=>pushed.push(event)},'./consent':{getTrackingConsent:()=>consent}});
+consent={analytics:false,marketing:false};
+assert.equal(subscription.trackIdeamartSubscription(item.item_id,'private-ref'),false);
+consent={analytics:true,marketing:false};
+assert.equal(subscription.trackIdeamartSubscription(item.item_id,'private-ref'),true);
+assert.equal(pushed.at(-1).event,'ideamart_subscription_1');
+assert.equal(pushed.at(-1).event_label,'Ideamart Subscription 1');
+assert.equal(JSON.stringify(pushed.at(-1)).includes('private-ref'),false);
+assert.equal(subscription.trackIdeamartSubscription(item.item_id,'private-ref'),false);
+assert.equal(subscription.trackIdeamartSubscription('invalid','new-ref'),false);
+console.log('PASS: Ideamart verified event label, privacy gating, UUID validation and reference deduplication without transmitting the reference.');

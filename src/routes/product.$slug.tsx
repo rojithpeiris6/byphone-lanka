@@ -1,3 +1,4 @@
+import { trackIdeamartSubscription } from "@/lib/tracking/ideamart";
 import { trackEcommerce, trackingItem } from "@/lib/tracking/ecommerce";
 import { CONSENT_EVENT } from "@/lib/tracking/consent";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
@@ -361,6 +362,7 @@ function ProductPage() {
         });
 
         if (res.success) {
+          trackIdeamartSubscription(p.id, otpRef);
           toast.success("Notification set!", { description: `We'll text ${notifyPhone} when it's back.` });
           setIsNotifyModalOpen(false);
           setNotifyPhone("");
