@@ -128,7 +128,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (userId) {
         await supabaseAdmin
           .from("customers")
-          .update({ 
+          .update({
             user_id: userId,
             full_name: customer.name,
             phone: customer.phone || null,
@@ -153,13 +153,13 @@ export const placeOrder = createServerFn({ method: "POST" })
         })
         .select("id")
         .single();
-      
+
       if (!newCustErr && newCust) {
         customerId = newCust.id;
       }
     }
 
-    const { data: order, error: orderError } = await (supabaseAdmin as any)
+    let { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
       .insert({
         order_number: orderNumber,
@@ -181,6 +181,35 @@ export const placeOrder = createServerFn({ method: "POST" })
       })
       .select()
       .single();
+
+    // Fallback if database constraint orders_customer_id_fkey still points to auth.users(id) instead of customers(id)
+    if (orderError && orderError.message?.includes("orders_customer_id_fkey")) {
+      console.warn("orders_customer_id_fkey constraint mismatch. Retrying order creation with auth userId / null fallback...");
+      const retry = await (supabaseAdmin as any)
+        .from("orders")
+        .insert({
+          order_number: orderNumber,
+          customer_id: userId,
+          customer_name: customer.name,
+          customer_email: customer.email,
+          customer_phone: customer.phone,
+          shipping_address: customer.address,
+          city: customer.city,
+          district: customer.district,
+          postal_code: customer.postalCode || null,
+          subtotal,
+          shipping_fee: shippingFee,
+          total,
+          payment_method: paymentMethod,
+          payment_provider: paymentProvider || null,
+          payment_status: "pending",
+          status: "pending",
+        })
+        .select()
+        .single();
+      order = retry.data;
+      orderError = retry.error;
+    }
 
     if (orderError) throw new Error(`Failed to create order: ${orderError.message}`);
 
