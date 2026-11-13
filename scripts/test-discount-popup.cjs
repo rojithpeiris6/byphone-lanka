@@ -1,0 +1,10 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),ts=require('typescript');
+const load=()=>{const exports={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/lib/discount-popup.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports});return exports;};
+const values=new Map(),storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)};
+let p=load();assert.equal(p.assignGiftDesign(storage,()=>.9),'dark');p=load();assert.equal(p.assignGiftDesign(storage,()=>.1),'dark');
+assert.equal(p.popupDismissed(storage,1000),false);p.dismissGiftPopup(storage,1000);assert.equal(load().popupDismissed(storage,2000),true);assert.equal(load().popupDismissed(storage,86401001),false);
+for(const path of ['/checkout','/cart','/admin','/order-success','/notifications'])assert.equal(p.popupAllowed(path),false);
+assert.equal(p.popupAllowed('/product/iphone-16-pro'),true);
+for(const phone of ['723335500','0723335500','+94 72 333 5500'])assert.equal(p.normalizeGiftPhone(phone),'0723335500');for(const phone of ['123','071234567890','abcd'])assert.equal(p.normalizeGiftPhone(phone),null);
+const broken={getItem:()=>{throw Error()},setItem:()=>{throw Error()}};p=load();assert.equal(p.assignGiftDesign(broken,()=>.1),'light');assert.equal(p.assignGiftDesign(broken,()=>.9),'light');p.dismissGiftPopup(broken,1000);assert.equal(p.popupDismissed(broken,2000),true);
+console.log('PASS: stable visitor design, 24-hour dismissal, excluded checkout routes, phone normalization and blocked-storage fallback.');
