@@ -34,16 +34,25 @@ console.log('PASS: consent gating, UUID/numeric validation, ecommerce reset, sea
 
 const browser={localStorage,dataLayer:[],dispatchEvent:()=>{}};
 const privacy=load('src/lib/tracking/consent.ts',{}, {window:browser,Event:class {constructor(type){this.type=type;}}});
-assert.equal(privacy.getTrackingConsent().analytics,false);
+assert.equal(privacy.getTrackingConsent().analytics,true);
+assert.equal(privacy.getTrackingConsent().marketing,true);
 vm.runInNewContext(privacy.CONSENT_BOOTSTRAP,{window:browser});
-assert.equal(browser.dataLayer[0][2].analytics_storage,'denied');
+for(const key of ['analytics_storage','ad_storage','ad_user_data','ad_personalization'])assert.equal(browser.dataLayer[0][2][key],'granted');
 privacy.saveTrackingConsent({analytics:true,marketing:false});
 assert.equal(browser.dataLayer[1][2].analytics_storage,'granted');
 assert.equal(browser.dataLayer[1][2].ad_storage,'denied');
 assert.equal(browser.dataLayer.at(-1).event,'tracking_analytics_granted');
 privacy.saveTrackingConsent({analytics:false,marketing:false});
 assert.equal(privacy.getTrackingConsent().analytics,false);
-console.log('PASS: optional storage denied by default, separate explicit choices, and consent withdrawal.');
+const returningBrowser={localStorage,dataLayer:[]};
+const returningPrivacy=load('src/lib/tracking/consent.ts',{}, {window:returningBrowser});
+assert.equal(returningPrivacy.getTrackingConsent().analytics,false);
+assert.equal(returningPrivacy.getTrackingConsent().marketing,false);
+vm.runInNewContext(returningPrivacy.CONSENT_BOOTSTRAP,{window:returningBrowser});
+for(const key of ['analytics_storage','ad_storage','ad_user_data','ad_personalization'])assert.equal(returningBrowser.dataLayer[0][2][key],'denied');
+const ssrPrivacy=load('src/lib/tracking/consent.ts',{});
+assert.equal(ssrPrivacy.getTrackingConsent().analytics,false);
+console.log('PASS: new-visitor tracking enabled by default; saved opt-outs retained across reload, separate choices, and SSR isolation.');
 
 let now=Date.now();
 class Clock extends Date {static now(){return now;}}
