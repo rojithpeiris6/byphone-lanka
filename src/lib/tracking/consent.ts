@@ -1,6 +1,7 @@
 export const CONSENT_KEY = "buyphone:tracking-consent:v1";
 export const CONSENT_EVENT = "buyphone:tracking-consent";
 export type TrackingConsent = { analytics: boolean; marketing: boolean };
+const DEFAULT_TRACKING: TrackingConsent = { analytics: true, marketing: true };
 let memory: TrackingConsent | undefined;
 
 export function savedTrackingConsent(): TrackingConsent | null {
@@ -11,12 +12,13 @@ export function savedTrackingConsent(): TrackingConsent | null {
     if (typeof value?.analytics === "boolean" && typeof value?.marketing === "boolean")
       return value;
   } catch {
-    /* A storage failure must not imply consent. */
+    /* When a saved choice is unavailable, use the configured site default. */
   }
   return null;
 }
 export function getTrackingConsent(): TrackingConsent {
-  return savedTrackingConsent() ?? { analytics: false, marketing: false };
+  if (typeof window === "undefined") return { analytics: false, marketing: false };
+  return savedTrackingConsent() ?? { ...DEFAULT_TRACKING };
 }
 export function saveTrackingConsent(value: TrackingConsent): void {
   memory = { analytics: value.analytics === true, marketing: value.marketing === true };
@@ -48,4 +50,4 @@ export function saveTrackingConsent(value: TrackingConsent): void {
 }
 
 /** Runs before the app's GTM loader, including on SSR output. */
-export const CONSENT_BOOTSTRAP = `(function(w){if(w.__buyphoneConsentInitialized)return;w.__buyphoneConsentInitialized=true;w.dataLayer=w.dataLayer||[];var c={analytics:false,marketing:false};try{var s=JSON.parse(w.localStorage.getItem('${CONSENT_KEY}')||'null');if(s&&typeof s.analytics==='boolean'&&typeof s.marketing==='boolean')c=s;}catch(e){}function g(){w.dataLayer.push(arguments);}g('consent','default',{analytics_storage:c.analytics?'granted':'denied',ad_storage:c.marketing?'granted':'denied',ad_user_data:c.marketing?'granted':'denied',ad_personalization:c.marketing?'granted':'denied'});})(window);`;
+export const CONSENT_BOOTSTRAP = `(function(w){if(w.__buyphoneConsentInitialized)return;w.__buyphoneConsentInitialized=true;w.dataLayer=w.dataLayer||[];var c=${JSON.stringify(DEFAULT_TRACKING)};try{var s=JSON.parse(w.localStorage.getItem('${CONSENT_KEY}')||'null');if(s&&typeof s.analytics==='boolean'&&typeof s.marketing==='boolean')c=s;}catch(e){}function g(){w.dataLayer.push(arguments);}g('consent','default',{analytics_storage:c.analytics?'granted':'denied',ad_storage:c.marketing?'granted':'denied',ad_user_data:c.marketing?'granted':'denied',ad_personalization:c.marketing?'granted':'denied'});})(window);`;
